@@ -3,6 +3,7 @@ package com.gdut.rpcstudy.demo.framework;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -11,8 +12,9 @@ import java.util.Objects;
  */
 @Data
 @AllArgsConstructor
-public class URL {
+public class URL implements Serializable {
 
+    private static final long serialVersionUID = 7947426935048871471L;
     private String hostname;
     private Integer port;
 

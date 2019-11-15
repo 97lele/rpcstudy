@@ -1,7 +1,9 @@
 package com.gdut.rpcstudy.demo.framework;
 
+import com.gdut.rpcstudy.demo.protocol.dubbo.DubboProtocol;
 import com.gdut.rpcstudy.demo.protocol.http.HttpClient;
 import com.gdut.rpcstudy.demo.provider.api.HelloService;
+import com.gdut.rpcstudy.demo.register.MapRegister;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -17,9 +19,10 @@ public class ProxyFactory {
         return (T)Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                HttpClient client = new HttpClient();
+              Protocol protocol=ProtocolFactory.dubbo();
+                URL url= MapRegister.random(interfaceClass.getName());
                 Invocation invocation = new Invocation(interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
-                String res = client.post("127.0.0.1", 8080, invocation);
+                String res = protocol.send(url,invocation);
                 return res;
             }
        });

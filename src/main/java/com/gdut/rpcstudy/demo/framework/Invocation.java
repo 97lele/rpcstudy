@@ -13,6 +13,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class Invocation implements Serializable {
 
+    private static final long serialVersionUID = -7789662944864163267L;
     private String interfaceName;
 
     private String methodName;
