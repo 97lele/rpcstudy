@@ -19,36 +19,38 @@ import io.netty.handler.codec.serialization.ObjectEncoder;
 public class NettyClient {
 
 
-
     public String send(URL url, Invocation invocation) {
         NettyClientHandler res = new NettyClientHandler();
-        Bootstrap b = new Bootstrap();
-        EventLoopGroup group = new NioEventLoopGroup();
+        NioEventLoopGroup group = new NioEventLoopGroup();
+        Bootstrap bootstrap = new Bootstrap();
         try {
-            b.group(group)
+            bootstrap.group(group)
                     .channel(NioSocketChannel.class)
-                    .option(ChannelOption.SO_KEEPALIVE, true)
                     .option(ChannelOption.TCP_NODELAY, true)
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            ChannelPipeline pipeline = socketChannel.pipeline();
-                            pipeline.addLast("decoder", new ObjectDecoder(
-                                    ClassResolvers.weakCachingResolver(this.getClass().getClassLoader())
-                            ));
-                            pipeline.addLast("encoder", new ObjectEncoder());
-                            pipeline.addLast("handler", res);
+                        protected void initChannel(SocketChannel ch) throws Exception {
+                            ch.pipeline().addLast(new ObjectEncoder());
+                            //反序列化对象时指定类解析器，null表示使用默认的类加载器
+                            ch.pipeline().addLast(new ObjectDecoder(1024 * 64, ClassResolvers.cacheDisabled(null)));
+                            ch.pipeline().addLast(res);
+
                         }
                     });
-            ChannelFuture sync = b.connect(url.getHostname(), url.getPort()).sync();
-            sync.channel().writeAndFlush(invocation);
-            sync.channel().closeFuture().sync();
-        } catch (Exception e) {
+            //connect是异步的，但调用其future的sync则是同步等待连接成功
+            ChannelFuture future = bootstrap.connect(url.getHostname(), url.getPort()).sync();
+            System.out.println("链接成功!" + "host:" + url.getHostname() + "port:" + url.getPort());
+            //同步等待调用信息发送成功
+            future.channel().writeAndFlush(invocation).sync();
+            //同步等待NettyClientHandler的channelRead被触发后（意味着收到了调用结果）
+            future.channel().closeFuture().sync();
+            return res.getResult();
+
+        } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
             group.shutdownGracefully();
         }
-        return res.getResult();
+        return null;
     }
-
 }

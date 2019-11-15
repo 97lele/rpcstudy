@@ -12,13 +12,11 @@ import lombok.Data;
  * @Date 2019/11/15 22:41
  */
 @Data
-public class NettyClientHandler extends ChannelHandlerAdapter {
+public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
    private String result;
 
-
-
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        setResult(msg.toString());
-        ctx.close();
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, String s) throws Exception {
+        this.result = s;
     }
 }
