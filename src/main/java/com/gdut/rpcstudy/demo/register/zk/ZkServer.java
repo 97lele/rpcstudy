@@ -1,28 +1,39 @@
-package com.gdut.rpcstudy.demo.protocol.netty;
+package com.gdut.rpcstudy.demo.register.zk;
 
-import com.gdut.rpcstudy.demo.register.zk.heartbeat.BeatDataSender;
+import com.gdut.rpcstudy.demo.protocol.netty.NettyServerHandler;
+import com.gdut.rpcstudy.demo.register.zk.heartbeat.HeartbeatHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.timeout.IdleStateHandler;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 /**
  * @author lulu
- * @Date 2019/11/15 22:41
+ * @Date 2019/11/18 22:17
+ * 注册中心，通过发送心跳来查看各server是否存活
  */
-public class NettyServer {
+public class ZkServer {
 
+    public static void main(String[] args) {
 
-    public void start(String hostName,int port) throws InterruptedException {
         NioEventLoopGroup boss = new NioEventLoopGroup();
         NioEventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
+        HashMap<String,String> map=new HashMap();
         try {
             bootstrap.group(boss, worker)
                     .channel(NioServerSocketChannel.class)
@@ -34,17 +45,17 @@ public class NettyServer {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             //自带的对象编码器
-                            ch.pipeline().addLast(new ObjectEncoder());
+                            ch.pipeline().addLast(new StringEncoder())
                             //解码器
-                            ch.pipeline().addLast(new ObjectDecoder(1024 * 64, ClassResolvers.cacheDisabled(null)));
-                            ch.pipeline().addLast(new NettyServerHandler());
+                            .addLast(new StringDecoder())
+                                    //链接空闲时间
+                            .addLast(new IdleStateHandler(0,0,60))
+                           //hearbeat处理器
+                            .addLast(new HeartbeatHandler(map));
                         }
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功
-            ChannelFuture future = bootstrap.bind(hostName,port).sync();
-            //添加心跳
-            BeatDataSender.send(hostName+":"+port,"127.0.0.1",8888);
-            System.out.println("绑定成功!"+"host:"+hostName+" port:"+port);
+            ChannelFuture future = bootstrap.bind("127.0.0.1",8888).sync();
             future.channel().closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();

@@ -31,7 +31,7 @@ public class MapRegister {
         return REGISTER.get(interfaceName).keySet().iterator().next();
     }
 
-    public static Class get(String interfaceName,URL url){
+    public static Class get(String interfaceName, URL url){
 
         REGISTER=getFile();
         return REGISTER.get(interfaceName).get(url);

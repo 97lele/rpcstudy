@@ -29,6 +29,11 @@ public class URL implements Serializable {
     }
 
     @Override
+    public String toString() {
+        return hostname+":"+port;
+    }
+
+    @Override
     public int hashCode() {
 
         return Objects.hash(hostname, port);

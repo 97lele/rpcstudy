@@ -22,7 +22,7 @@ public class Provider {
         String hostAddress = InetAddress.getLocalHost().getHostName();
         URL url=new URL(hostAddress,8080);
         MapRegister.register(HelloService.class.getName(),url,HelloServiceImpl.class);
-        Protocol server= ProtocolFactory.http();
+        Protocol server= ProtocolFactory.netty();
         server.start(url);
 
     }
