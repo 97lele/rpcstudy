@@ -1,4 +1,4 @@
-package com.gdut.rpcstudy.demo.protocol.dubbo;
+package com.gdut.rpcstudy.demo.protocol.netty;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -35,7 +35,7 @@ public class NettyServer {
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功
             ChannelFuture future = bootstrap.bind(hostName,port).sync();
-            System.out.println("绑定成功!"+"host:"+hostName+"port:"+port);
+            System.out.println("绑定成功!"+"host:"+hostName+" port:"+port);
             future.channel().closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();

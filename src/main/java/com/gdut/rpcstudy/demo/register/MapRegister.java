@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * @author: lele
  * @date: 2019/11/15 下午6:56
- * com.gdut.rpcstudy.demo.provider.api.HelloService
+ *
  */
 public class MapRegister {
 

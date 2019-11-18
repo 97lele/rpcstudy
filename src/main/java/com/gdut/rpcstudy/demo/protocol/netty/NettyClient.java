@@ -1,4 +1,4 @@
-package com.gdut.rpcstudy.demo.protocol.dubbo;
+package com.gdut.rpcstudy.demo.protocol.netty;
 
 import com.gdut.rpcstudy.demo.framework.Invocation;
 import com.gdut.rpcstudy.demo.framework.URL;
@@ -39,7 +39,7 @@ public class NettyClient {
                     });
             //connect是异步的，但调用其future的sync则是同步等待连接成功
             ChannelFuture future = bootstrap.connect(url.getHostname(), url.getPort()).sync();
-            System.out.println("链接成功!" + "host:" + url.getHostname() + "port:" + url.getPort());
+            System.out.println("链接成功!" + "host:" + url.getHostname() + " port:" + url.getPort());
             //同步等待调用信息发送成功
             future.channel().writeAndFlush(invocation).sync();
             //同步等待NettyClientHandler的channelRead被触发后（意味着收到了调用结果）

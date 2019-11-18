@@ -1,4 +1,4 @@
-package com.gdut.rpcstudy.demo.protocol.dubbo;
+package com.gdut.rpcstudy.demo.protocol.netty;
 
 import com.gdut.rpcstudy.demo.framework.Invocation;
 import com.gdut.rpcstudy.demo.framework.Protocol;
@@ -7,8 +7,9 @@ import com.gdut.rpcstudy.demo.framework.URL;
 /**
  * @author lulu
  * @Date 2019/11/15 23:13
+ * 具体协议实现类
  */
-public class DubboProtocol implements Protocol {
+public class NettyProtocol implements Protocol {
     @Override
     public void start(URL url) {
         NettyServer nettyServer=new NettyServer();

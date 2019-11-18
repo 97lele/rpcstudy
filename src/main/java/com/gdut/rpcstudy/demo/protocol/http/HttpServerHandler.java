@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 
 /**
  * @author: lele
@@ -20,16 +21,19 @@ import java.lang.reflect.Method;
  */
 public class HttpServerHandler  {
    public void handle(HttpServletRequest req, HttpServletResponse resp){
-
        try {
+           //获取输入流
            ServletInputStream inputStream = req.getInputStream();
+           //包装成对象输入流
            ObjectInputStream ois=new ObjectInputStream(inputStream);
+           //转换成方法调用参数
            Invocation invocation= (Invocation) ois.readObject();
-           URL url=new URL("127.0.0.1",8080);
+           String hostAddress = InetAddress.getLocalHost().getHostName();
+           URL url=new URL(hostAddress,8080);
            Class implClass=MapRegister.get(invocation.getInterfaceName(),url);
-
            Method method = implClass.getMethod(invocation.getMethodName(), invocation.getParamsTypes());
            String result = (String) method.invoke(implClass.newInstance(), invocation.getParams());
+           //写回结果
            IOUtils.write(result,resp.getOutputStream());
        } catch (IOException e) {
            e.printStackTrace();

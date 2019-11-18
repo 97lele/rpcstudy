@@ -9,6 +9,7 @@ import java.util.Objects;
 /**
  * @author: lele
  * @date: 2019/11/15 下午6:56
+ * 自定义的URL类，方便管理
  */
 @Data
 @AllArgsConstructor

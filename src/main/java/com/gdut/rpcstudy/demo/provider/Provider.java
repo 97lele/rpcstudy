@@ -2,16 +2,12 @@ package com.gdut.rpcstudy.demo.provider;
 
 import com.gdut.rpcstudy.demo.framework.Protocol;
 import com.gdut.rpcstudy.demo.framework.ProtocolFactory;
-import com.gdut.rpcstudy.demo.framework.ProxyFactory;
 import com.gdut.rpcstudy.demo.framework.URL;
-import com.gdut.rpcstudy.demo.protocol.dubbo.DubboProtocol;
-import com.gdut.rpcstudy.demo.protocol.http.HttpServer;
 import com.gdut.rpcstudy.demo.provider.api.HelloService;
 import com.gdut.rpcstudy.demo.provider.impl.HelloServiceImpl;
 import com.gdut.rpcstudy.demo.register.MapRegister;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
 /**
@@ -22,9 +18,10 @@ import java.net.UnknownHostException;
 public class Provider {
 
     public static void main(String[] args) throws UnknownHostException {
-        URL url=new URL("localhost",8080);
+        String hostAddress = InetAddress.getLocalHost().getHostName();
+        URL url=new URL(hostAddress,8080);
         MapRegister.register(HelloService.class.getName(),url,HelloServiceImpl.class);
-        Protocol server= ProtocolFactory.dubbo();
+        Protocol server= ProtocolFactory.http();
         server.start(url);
 
     }

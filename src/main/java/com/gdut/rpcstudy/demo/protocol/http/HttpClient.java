@@ -14,6 +14,7 @@ import java.net.URL;
 /**
  * @author: lele
  * @date: 2019/11/15 下午7:12
+ * 使用post方法携带对象进行请求
  */
 public class HttpClient {
     public String post(String hostname, Integer port, Invocation invocation) {

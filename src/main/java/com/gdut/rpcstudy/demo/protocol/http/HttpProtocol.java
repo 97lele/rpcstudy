@@ -7,6 +7,7 @@ import com.gdut.rpcstudy.demo.framework.URL;
 /**
  * @author lulu
  * @Date 2019/11/15 23:31
+ * http协议
  */
 public class HttpProtocol implements Protocol {
     @Override

@@ -10,6 +10,7 @@ import java.io.IOException;
 /**
  * @author: lele
  * @date: 2019/11/15 下午6:51
+ * 相当于拦截器的功能，请求都要经过这个servlet处理
  */
 public class DispatcherServlet extends HttpServlet {
     @Override

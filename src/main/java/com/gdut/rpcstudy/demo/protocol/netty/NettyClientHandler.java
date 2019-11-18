@@ -1,9 +1,6 @@
-package com.gdut.rpcstudy.demo.protocol.dubbo;
+package com.gdut.rpcstudy.demo.protocol.netty;
 
-import com.gdut.rpcstudy.demo.framework.Invocation;
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.Data;
 
