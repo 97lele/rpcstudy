@@ -40,6 +40,7 @@ public class HttpServer {
 
         service.setContainer(engine);
         service.addConnector(connector);
+        //添加servlet，匹配所有路径
         tomcat.addServlet(contextPath, "dispathcer", new DispatcherServlet());
         context.addServletMappingDecoded("/*","dispathcer");
         try {

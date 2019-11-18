@@ -12,7 +12,7 @@ import com.gdut.rpcstudy.demo.provider.api.HelloService;
 public class Comsumer {
     public static void main(String[] args) {
         HelloService helloService = ProxyFactory.getProxy(HelloService.class);
-        String result = helloService.sayHello("123");
+        String result = helloService.qq();
         System.out.println(result);
 
     }

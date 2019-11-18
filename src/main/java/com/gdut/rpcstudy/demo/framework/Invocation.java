@@ -21,6 +21,4 @@ public class Invocation implements Serializable {
     private Object[] params;
     //防止重载
     private Class[] paramsTypes;
-
-
 }

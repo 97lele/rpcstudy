@@ -18,6 +18,7 @@ import java.net.UnknownHostException;
 public class Provider {
 
     public static void main(String[] args) throws UnknownHostException {
+        //这里多个接口的话，都要注册上去
         String hostAddress = InetAddress.getLocalHost().getHostName();
         URL url=new URL(hostAddress,8080);
         MapRegister.register(HelloService.class.getName(),url,HelloServiceImpl.class);

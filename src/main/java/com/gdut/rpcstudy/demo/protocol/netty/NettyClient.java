@@ -20,18 +20,21 @@ public class NettyClient {
 
 
     public String send(URL url, Invocation invocation) {
+        //用来保存调用结果的handler
         NettyClientHandler res = new NettyClientHandler();
         NioEventLoopGroup group = new NioEventLoopGroup();
         Bootstrap bootstrap = new Bootstrap();
         try {
             bootstrap.group(group)
                     .channel(NioSocketChannel.class)
+                    //true保证实时性，默认为false会累积到一定的数据量才发送
                     .option(ChannelOption.TCP_NODELAY, true)
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
+                            //编码器
                             ch.pipeline().addLast(new ObjectEncoder());
-                            //反序列化对象时指定类解析器，null表示使用默认的类加载器
+                            //反序列化（解码）对象时指定类解析器，null表示使用默认的类加载器
                             ch.pipeline().addLast(new ObjectDecoder(1024 * 64, ClassResolvers.cacheDisabled(null)));
                             ch.pipeline().addLast(res);
 
@@ -42,7 +45,7 @@ public class NettyClient {
             System.out.println("链接成功!" + "host:" + url.getHostname() + " port:" + url.getPort());
             //同步等待调用信息发送成功
             future.channel().writeAndFlush(invocation).sync();
-            //同步等待NettyClientHandler的channelRead被触发后（意味着收到了调用结果）
+            //同步等待NettyClientHandler的channelRead0被触发后（意味着收到了调用结果）关闭连接
             future.channel().closeFuture().sync();
             return res.getResult();
 

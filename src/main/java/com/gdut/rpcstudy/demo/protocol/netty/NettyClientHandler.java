@@ -7,6 +7,7 @@ import lombok.Data;
 /**
  * @author lulu
  * @Date 2019/11/15 22:41
+ * 用来保存结果
  */
 @Data
 public class NettyClientHandler extends SimpleChannelInboundHandler<String> {

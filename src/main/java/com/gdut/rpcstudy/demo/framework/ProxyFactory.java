@@ -17,9 +17,13 @@ public class ProxyFactory {
         return (T)Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                //指定所用协议
               Protocol protocol=ProtocolFactory.http();
+              //通过注册中心获取可用链接
                 URL url= MapRegister.random(interfaceClass.getName());
+                //封装方法参数
                 Invocation invocation = new Invocation(interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
+                //发送请求
                 String res = protocol.send(url,invocation);
                 return res;
             }

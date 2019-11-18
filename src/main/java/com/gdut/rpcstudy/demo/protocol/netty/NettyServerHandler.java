@@ -12,7 +12,6 @@ import java.net.InetAddress;
 /**
  * @author lulu
  * @Date 2019/11/15 22:41
- * 通过
  */
 public class NettyServerHandler extends SimpleChannelInboundHandler<Invocation> {
 
@@ -27,6 +26,6 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Invocation> 
         System.out.println("结果-------"+result);
         //由于操作异步，确保发送消息后才关闭连接
         ctx.writeAndFlush(result).addListener(ChannelFutureListener.CLOSE);
-//        ReferenceCountUtil.release(invocation);
+//        ReferenceCountUtil.release(invocation); 默认实现，如果只是普通的adapter则需要释放对象
     }
 }

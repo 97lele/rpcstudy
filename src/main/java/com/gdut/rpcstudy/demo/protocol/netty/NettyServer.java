@@ -23,12 +23,16 @@ public class NettyServer {
         try {
             bootstrap.group(boss, worker)
                     .channel(NioServerSocketChannel.class)
+                    //存放已完成三次握手的请求的队列的最大长度
                     .option(ChannelOption.SO_BACKLOG, 128)
+                    //启用心跳保活
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
+                            //自带的对象编码器
                             ch.pipeline().addLast(new ObjectEncoder());
+                            //解码器
                             ch.pipeline().addLast(new ObjectDecoder(1024 * 64, ClassResolvers.cacheDisabled(null)));
                             ch.pipeline().addLast(new NettyServerHandler());
                         }

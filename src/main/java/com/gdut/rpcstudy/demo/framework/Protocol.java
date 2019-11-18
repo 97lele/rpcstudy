@@ -7,7 +7,9 @@ package com.gdut.rpcstudy.demo.framework;
  */
 public interface Protocol {
 
-   void start(URL url);
+    //服务提供方启动的方法
+    void start(URL url);
 
-   String send(URL url,Invocation invocation);
+    //发送请求
+    String send(URL url, Invocation invocation);
 }

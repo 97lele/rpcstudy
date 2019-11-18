@@ -17,6 +17,7 @@ public class MapRegister {
     //{服务名：{URL:实现类}}
     private static Map<String, Map<URL, Class>> REGISTER = new HashMap<>();
 
+    //一个接口对应多个map,每个map只有一个key/value，key为可用的url(服务地址),value(具体的实现类)
     public static void register(String interfaceName, URL url, Class implClass) {
         Map<URL, Class> map = new HashMap<>();
         map.put(url,implClass);

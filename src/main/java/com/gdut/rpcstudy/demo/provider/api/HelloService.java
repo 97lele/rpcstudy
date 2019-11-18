@@ -6,4 +6,5 @@ package com.gdut.rpcstudy.demo.provider.api;
  */
 public interface HelloService {
     String sayHello(String userName);
+    String qq();
 }
