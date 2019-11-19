@@ -12,4 +12,5 @@ public interface Protocol {
 
     //发送请求
     String send(URL url, Invocation invocation);
+
 }

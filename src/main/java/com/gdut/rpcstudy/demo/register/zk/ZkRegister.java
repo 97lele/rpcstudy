@@ -11,16 +11,18 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
  * @author lulu
  * @Date 2019/11/18 21:17
- * 负责实现具体的业务功能
+ * 负责实现注册中心具体的业务功能
  */
 public class ZkRegister {
     //{接口：{URL:实现类名}},这里可以为每个接口建立子节点，节点名为url地址，值为className
     private static CuratorFramework client = null;
+
 
     //通过静态代码块初始化
     static{
@@ -68,7 +70,7 @@ public class ZkRegister {
         }
     }
 
-    //获取具体实现类的类名
+    //获取具体实现类的类名,这里还可以添加一个内部缓存，不用每次都去访问，
     public static String get(String interfaceName, URL url) {
         String res = null;
         try {

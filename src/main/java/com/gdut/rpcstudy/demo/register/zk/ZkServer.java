@@ -34,7 +34,7 @@ public class ZkServer {
         NioEventLoopGroup boss = new NioEventLoopGroup();
         NioEventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
-        ConcurrentHashMap<String,String> map=new ConcurrentHashMap();
+        ConcurrentHashMap<String,String> ChannalIdUrlMap=new ConcurrentHashMap();
         try {
             bootstrap.group(boss, worker)
                     .channel(NioServerSocketChannel.class)
@@ -52,7 +52,7 @@ public class ZkServer {
                                     //链接空闲时间
                             .addLast(new IdleStateHandler(0,0,60))
                            //hearbeat处理器
-                            .addLast(new HeartbeatHandler(map));
+                            .addLast(new HeartbeatHandler(ChannalIdUrlMap));
                         }
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功

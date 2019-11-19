@@ -8,9 +8,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.string.StringEncoder;
 
 import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 
 /**
@@ -21,7 +19,6 @@ public class BeatDataSender {
     private BeatDataSender() {
 
     }
-
     public static void send(String url, String hostName, Integer port) {
         EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
@@ -36,7 +33,7 @@ public class BeatDataSender {
                                     .addLast(new ChannelInboundHandlerAdapter(){
                                         @Override
                                         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-                                            System.out.println("由于不活跃次数在5分钟内超过3次,链接被关闭");
+                                            System.out.println("由于不活跃次数在5分钟内超过2次,链接被关闭");
                                         }
                                     });
 
@@ -44,7 +41,7 @@ public class BeatDataSender {
                     })
                     .connect(hostName, port).sync();
             System.out.println("心跳客户端绑定" + "hostname:" + hostName + "port:" + port);
-            //这里只是演示心跳机制，普通的做法只需要定时发送本机地址即可
+            //这里只是演示心跳机制不活跃的情况下重连，普通的做法只需要定时发送本机地址即可
             service.scheduleAtFixedRate(() -> {
                 if (connect.channel().isActive()) {
                     int time = new Random().nextInt(5);
@@ -60,6 +57,7 @@ public class BeatDataSender {
             e.printStackTrace();
         }
     }
+
 
 
 }

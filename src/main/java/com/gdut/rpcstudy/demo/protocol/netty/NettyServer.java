@@ -12,6 +12,10 @@ import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author lulu
  * @Date 2019/11/15 22:41
@@ -19,7 +23,9 @@ import io.netty.handler.codec.serialization.ObjectEncoder;
 public class NettyServer {
 
 
-    public void start(String hostName,int port) throws InterruptedException {
+
+
+    public void start(String hostName, int port) throws InterruptedException {
         NioEventLoopGroup boss = new NioEventLoopGroup();
         NioEventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -41,14 +47,15 @@ public class NettyServer {
                         }
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功
-            ChannelFuture future = bootstrap.bind(hostName,port).sync();
-            //添加心跳
-            BeatDataSender.send(hostName+":"+port,"127.0.0.1",8888);
-            System.out.println("绑定成功!"+"host:"+hostName+" port:"+port);
+            ChannelFuture future = bootstrap.bind(hostName, port).sync();
+            //添加发送心跳
+            BeatDataSender.send(hostName + ":" + port, "127.0.0.1", 8888);
+
+            System.out.println("绑定成功!" + "host:" + hostName + " port:" + port);
             future.channel().closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             boss.shutdownGracefully();
             worker.shutdownGracefully();
         }
