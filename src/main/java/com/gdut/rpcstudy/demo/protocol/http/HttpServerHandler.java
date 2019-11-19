@@ -4,6 +4,7 @@ package com.gdut.rpcstudy.demo.protocol.http;
 import com.gdut.rpcstudy.demo.framework.Invocation;
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.register.MapRegister;
+import com.gdut.rpcstudy.demo.register.zk.ZkRegister;
 import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletInputStream;
@@ -30,7 +31,8 @@ public class HttpServerHandler  {
            Invocation invocation= (Invocation) ois.readObject();
            String hostAddress = InetAddress.getLocalHost().getHostName();
            URL url=new URL(hostAddress,8080);
-           Class implClass=MapRegister.get(invocation.getInterfaceName(),url);
+           String implClassName = ZkRegister.get(invocation.getInterfaceName(), url);
+           Class implClass=Class.forName(implClassName);
            Method method = implClass.getMethod(invocation.getMethodName(), invocation.getParamsTypes());
            String result = (String) method.invoke(implClass.newInstance(), invocation.getParams());
            //写回结果

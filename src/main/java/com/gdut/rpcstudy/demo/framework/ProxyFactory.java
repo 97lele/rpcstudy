@@ -1,6 +1,7 @@
 package com.gdut.rpcstudy.demo.framework;
 
 import com.gdut.rpcstudy.demo.register.MapRegister;
+import com.gdut.rpcstudy.demo.register.zk.ZkRegister;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -18,9 +19,9 @@ public class ProxyFactory {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 //指定所用协议
-              Protocol protocol=ProtocolFactory.http();
-              //通过注册中心获取可用链接
-                URL url= MapRegister.random(interfaceClass.getName());
+              Protocol protocol=ProtocolFactory.netty();
+              //通过注册中心获取可用链接,这里使用zk
+                URL url= ZkRegister.random(interfaceClass.getName());
                 //封装方法参数
                 Invocation invocation = new Invocation(interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
                 //发送请求

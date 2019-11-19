@@ -1,8 +1,6 @@
 package com.gdut.rpcstudy.demo.consumer;
 
-import com.gdut.rpcstudy.demo.framework.Invocation;
 import com.gdut.rpcstudy.demo.framework.ProxyFactory;
-import com.gdut.rpcstudy.demo.protocol.http.HttpClient;
 import com.gdut.rpcstudy.demo.provider.api.HelloService;
 
 /**

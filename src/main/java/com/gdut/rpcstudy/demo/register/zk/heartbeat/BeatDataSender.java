@@ -1,15 +1,13 @@
 package com.gdut.rpcstudy.demo.register.zk.heartbeat;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.string.StringEncoder;
 
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,21 +32,29 @@ public class BeatDataSender {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             socketChannel.pipeline().addLast(new StringEncoder())
-                                    .addLast(new StringEncoder());
+                                    .addLast(new StringEncoder())
+                                    .addLast(new ChannelInboundHandlerAdapter(){
+                                        @Override
+                                        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+                                            System.out.println("由于不活跃次数在5分钟内超过3次,链接被关闭");
+                                        }
+                                    });
+
                         }
                     })
                     .connect(hostName, port).sync();
-            System.out.println("心跳客户端绑定"+"hostname:"+hostName+"port:"+port);
-
-            connect.channel().writeAndFlush(url);
-
-                service.scheduleAtFixedRate(() -> {
-                    if(connect.channel().isActive()){
-                        System.out.println("发送本机地址"+url);
+            System.out.println("心跳客户端绑定" + "hostname:" + hostName + "port:" + port);
+            //这里只是演示心跳机制，普通的做法只需要定时发送本机地址即可
+            service.scheduleAtFixedRate(() -> {
+                if (connect.channel().isActive()) {
+                    int time = new Random().nextInt(5);
+                    System.out.println(time);
+                    if(time >3){
+                        System.out.println("发送本机地址：" + url);
                         connect.channel().writeAndFlush(url);
                     }
-
-                }, 62, 60, TimeUnit.SECONDS);
+                }
+            }, 60, 60, TimeUnit.SECONDS);
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -3,6 +3,7 @@ package com.gdut.rpcstudy.demo.protocol.netty;
 import com.gdut.rpcstudy.demo.framework.Invocation;
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.register.MapRegister;
+import com.gdut.rpcstudy.demo.register.zk.ZkRegister;
 import io.netty.channel.*;
 import io.netty.util.ReferenceCountUtil;
 
@@ -20,7 +21,8 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Invocation> 
     protected void channelRead0(ChannelHandlerContext ctx, Invocation invocation) throws Exception {
         String hostAddress = InetAddress.getLocalHost().getHostName();
         //这里的port按照本地的端口，可以用其他变量指示
-        Class serviceImpl= MapRegister.get(invocation.getInterfaceName(),new URL(hostAddress,8080));
+        String serviceImplName= ZkRegister.get(invocation.getInterfaceName(),new URL(hostAddress,8080));
+        Class<?> serviceImpl = Class.forName(serviceImplName);
         Method method=serviceImpl.getMethod(invocation.getMethodName(),invocation.getParamsTypes());
         Object result=method.invoke(serviceImpl.newInstance(),invocation.getParams());
         System.out.println("结果-------"+result);

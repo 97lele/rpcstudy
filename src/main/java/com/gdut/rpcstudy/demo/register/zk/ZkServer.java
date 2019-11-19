@@ -20,11 +20,12 @@ import io.netty.handler.timeout.IdleStateHandler;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author lulu
  * @Date 2019/11/18 22:17
- * 注册中心，通过发送心跳来查看各server是否存活
+ * 注册中心心跳检查服务器，通过查看心跳来查看各server是否存活
  */
 public class ZkServer {
 
@@ -33,7 +34,7 @@ public class ZkServer {
         NioEventLoopGroup boss = new NioEventLoopGroup();
         NioEventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
-        HashMap<String,String> map=new HashMap();
+        ConcurrentHashMap<String,String> map=new ConcurrentHashMap();
         try {
             bootstrap.group(boss, worker)
                     .channel(NioServerSocketChannel.class)
@@ -44,9 +45,9 @@ public class ZkServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            //自带的对象编码器
+                            //string编码器
                             ch.pipeline().addLast(new StringEncoder())
-                            //解码器
+                            //string解码器
                             .addLast(new StringDecoder())
                                     //链接空闲时间
                             .addLast(new IdleStateHandler(0,0,60))
