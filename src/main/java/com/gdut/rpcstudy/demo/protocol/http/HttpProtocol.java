@@ -10,6 +10,7 @@ import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
  * @Date 2019/11/15 23:31
  * http协议
  */
+@Deprecated
 public class HttpProtocol implements Protocol {
     @Override
     public void start(URL url) {

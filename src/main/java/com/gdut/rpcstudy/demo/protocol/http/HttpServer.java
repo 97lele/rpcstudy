@@ -12,6 +12,7 @@ import org.apache.catalina.startup.Tomcat;
  * @date: 2019/11/15 下午6:44
  * 构造嵌入式tomcat服务器
  */
+@Deprecated
 public class HttpServer {
     public void start(String hostname, Integer port) {
 

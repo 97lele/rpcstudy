@@ -18,6 +18,7 @@ import java.net.URL;
  * @date: 2019/11/15 下午7:12
  * 使用post方法携带对象进行请求
  */
+@Deprecated
 public class HttpClient {
     public RpcResponse post(String hostname, Integer port, RpcRequest rpcRequest) {
         try {

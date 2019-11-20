@@ -19,8 +19,9 @@ import java.net.InetAddress;
  * @author: lele
  * @date: 2019/11/15 下午6:51
  */
+@Deprecated
 public class HttpServerHandler  {
-   public void handle(HttpServletRequest req, HttpServletResponse resp){
+  /* public void handle(HttpServletRequest req, HttpServletResponse resp){
        try {
            //获取输入流
            ServletInputStream inputStream = req.getInputStream();
@@ -50,5 +51,5 @@ public class HttpServerHandler  {
            e.printStackTrace();
        }
 
-   }
+   }*/
 }
