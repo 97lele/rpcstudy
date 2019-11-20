@@ -3,11 +3,13 @@ package com.gdut.rpcstudy.demo.protocol.netty;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
+import com.gdut.rpcstudy.demo.framework.server.RpcStudyRegister;
 import com.gdut.rpcstudy.demo.register.zk.ZkRegister;
 import io.netty.channel.*;
 
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.util.Map;
 
 /**
  * @author lulu
@@ -15,16 +17,20 @@ import java.net.InetAddress;
  */
 public class NettyServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
+    //存放服务的map
+    Map<String,Object> serviceMap;
+
+    public NettyServerHandler(Map<String,Object> serviceMap){
+        this.serviceMap=serviceMap;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcRequest rpcRequest) throws Exception {
-        String hostAddress = InetAddress.getLocalHost().getHostName();
         System.out.println("接受请求");
         //这里的port按照本地的端口，可以用其他变量指示
-        String serviceImplName= ZkRegister.get(rpcRequest.getInterfaceName(),new URL(hostAddress,8080));
-        Class<?> serviceImpl = Class.forName(serviceImplName);
-        Method method=serviceImpl.getMethod(rpcRequest.getMethodName(), rpcRequest.getParamsTypes());
-        Object result=method.invoke(serviceImpl.newInstance(), rpcRequest.getParams());
+        Object serviceImpl= serviceMap.get(rpcRequest.getInterfaceName());
+        Method method= serviceImpl.getClass().getMethod(rpcRequest.getMethodName(), rpcRequest.getParamsTypes());
+        Object result=method.invoke(serviceImpl, rpcRequest.getParams());
         System.out.println("结果-------"+result);
         RpcResponse response=new RpcResponse();
         response.setResult(result);

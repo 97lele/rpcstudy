@@ -1,6 +1,7 @@
 package com.gdut.rpcstudy.demo.framework.serialize.handler;
 
 import com.gdut.rpcstudy.demo.framework.serialize.serializer.JsonSerializer;
+import com.gdut.rpcstudy.demo.framework.serialize.serializer.ProtobufSerializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -13,7 +14,10 @@ import java.util.List;
  * 把字节转为实体类,如byte->client供后续处理
  */
 public class RpcDecoder extends ByteToMessageDecoder {
+    //处理的对象
     private Class<?> target;
+
+    private ProtobufSerializer serializer=ProtobufSerializer.getInstance();
 
     public RpcDecoder(Class<?> target) {
         this.target = target;
@@ -34,7 +38,9 @@ public class RpcDecoder extends ByteToMessageDecoder {
         //写入byte数组
         byte[] data = new byte[dataLength];
         byteBuf.readBytes(data);
-        Object res = JsonSerializer.getInstance().deserialize(data, target);
+        //解码转成对象
+        Object res = serializer.deserialize(data, target);
+        //给后面的handler处理
         list.add(res);
 
     }

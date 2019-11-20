@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 /**
  * @author: lele
  * @date: 2019/11/19 下午5:16
+ * 发现有bug
  */
 public class JsonSerializer implements RpcSerializer {
     private static final Gson gson = new Gson();

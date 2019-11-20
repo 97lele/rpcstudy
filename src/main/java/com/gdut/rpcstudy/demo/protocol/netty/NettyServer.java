@@ -4,6 +4,7 @@ import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcDecoder;
 import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcEncoder;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
+import com.gdut.rpcstudy.demo.framework.server.RpcStudyRegister;
 import com.gdut.rpcstudy.demo.register.zk.heartbeat.BeatDataSender;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -13,6 +14,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+import java.util.Map;
+
 
 /**
  * @author lulu
@@ -21,7 +24,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 public class NettyServer {
 
 
-    public void start(String hostName, int port) throws InterruptedException {
+    public void start(String hostName, int port, Map<String,Object> serviceMap) throws InterruptedException {
         NioEventLoopGroup boss = new NioEventLoopGroup();
         NioEventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -41,14 +44,14 @@ public class NettyServer {
                                     .addLast(new RpcDecoder(RpcRequest.class))
                                     //把本地执行的response对象转为字节
                                     .addLast(new RpcEncoder(RpcResponse.class))
-                                    .addLast(new NettyServerHandler());
+                                    .addLast(new NettyServerHandler(serviceMap));
 
                         }
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功
             ChannelFuture future = bootstrap.bind(hostName, port).sync();
             //添加发送心跳
-            BeatDataSender.send(hostName + ":" + port, "127.0.0.1", 8888);
+//            BeatDataSender.send(hostName + ":" + port, "127.0.0.1", 8888);
 
             System.out.println("绑定成功!" + "host:" + hostName + " port:" + port);
             future.channel().closeFuture().sync();

@@ -20,7 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * 负责实现注册中心具体的业务功能
  */
 public class ZkRegister {
-    //{接口：{URL:实现类名}},这里可以为每个接口建立子节点，节点名为url地址，值为className
+
+
+
+    //这次改动为/服务名/ip
     private static CuratorFramework client = null;
 
 
@@ -41,13 +44,13 @@ public class ZkRegister {
 
 
     //注册接口、对应服务ip及其实现类
-    public static void register(String interfaceName, URL url, Class implClass) {
+    public static void register(String serviceName, URL url) {
         try {
             client.create()
                     .creatingParentsIfNeeded()
                     .withMode(CreateMode.EPHEMERAL)
                     .withACL(ZooDefs.Ids.OPEN_ACL_UNSAFE)
-                    .forPath(getPath(interfaceName, url.toString()), implClass.getCanonicalName().getBytes());
+                    .forPath(getPath(serviceName, url.toString()));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -70,23 +73,12 @@ public class ZkRegister {
         }
     }
 
-    //获取具体实现类的类名,这里还可以添加一个内部缓存，不用每次都去访问，
-    public static String get(String interfaceName, URL url) {
-        String res = null;
-        try {
-            byte[] bytes = client.getData().forPath(getPath(interfaceName, url.toString()));
-            res = new String(bytes);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return res;
 
-    }
-
-    //通过接口名获取具体的实现类
-    public static URL random(String interfaceName) {
+    //通过服务名获取具体的url
+    public static URL random(String serviceName) {
         try {
-            List<String> urlList = client.getChildren().forPath(getPath(interfaceName));
+
+            List<String> urlList = client.getChildren().forPath(getPath(serviceName));
             String[] url = urlList.get(0).split(":");
             return new URL(url[0], Integer.valueOf(url[1]));
         } catch (Exception e) {

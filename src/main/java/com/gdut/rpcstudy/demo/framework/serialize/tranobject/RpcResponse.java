@@ -8,7 +8,6 @@ import lombok.Data;
  * @date: 2019/11/19 下午5:12
  */
 @Data
-
 public class RpcResponse  {
     private String requestId;
 

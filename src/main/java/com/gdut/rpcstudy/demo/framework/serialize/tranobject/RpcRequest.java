@@ -12,14 +12,14 @@ import java.io.Serializable;
  */
 @Data
 @AllArgsConstructor
-public class RpcRequest implements Serializable {
+public class RpcRequest  {
 
-    private static final long serialVersionUID = -7789662944864163267L;
     private String requestId;
 
     private String interfaceName;
 
     private String methodName;
+
     private Object[] params;
     //防止重载
     private Class[] paramsTypes;
