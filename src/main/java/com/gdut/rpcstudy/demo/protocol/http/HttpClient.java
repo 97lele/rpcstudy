@@ -1,6 +1,8 @@
 package com.gdut.rpcstudy.demo.protocol.http;
 
-import com.gdut.rpcstudy.demo.framework.Invocation;
+import com.gdut.rpcstudy.demo.framework.serialize.serializer.JsonSerializer;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -17,7 +19,7 @@ import java.net.URL;
  * 使用post方法携带对象进行请求
  */
 public class HttpClient {
-    public String post(String hostname, Integer port, Invocation invocation) {
+    public RpcResponse post(String hostname, Integer port, RpcRequest rpcRequest) {
         try {
             URL url = new URL("http", hostname, port, "/");
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
@@ -25,12 +27,13 @@ public class HttpClient {
             urlConnection.setDoOutput(true);
             OutputStream outputStream = urlConnection.getOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(outputStream);
-            oos.writeObject(invocation);
+            oos.writeObject(rpcRequest);
             oos.flush();
             oos.close();
             InputStream inputStream = urlConnection.getInputStream();
             String result = IOUtils.toString(inputStream);
-            return result;
+            RpcResponse deserialize = JsonSerializer.getInstance().deserialize(result.getBytes(), RpcResponse.class);
+            return deserialize;
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (IOException e) {

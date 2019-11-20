@@ -1,9 +1,8 @@
 package com.gdut.rpcstudy.demo.protocol.http;
 
 
-import com.gdut.rpcstudy.demo.framework.Invocation;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.URL;
-import com.gdut.rpcstudy.demo.register.MapRegister;
 import com.gdut.rpcstudy.demo.register.zk.ZkRegister;
 import org.apache.commons.io.IOUtils;
 
@@ -28,13 +27,13 @@ public class HttpServerHandler  {
            //包装成对象输入流
            ObjectInputStream ois=new ObjectInputStream(inputStream);
            //转换成方法调用参数
-           Invocation invocation= (Invocation) ois.readObject();
+           RpcRequest rpcRequest = (RpcRequest) ois.readObject();
            String hostAddress = InetAddress.getLocalHost().getHostName();
            URL url=new URL(hostAddress,8080);
-           String implClassName = ZkRegister.get(invocation.getInterfaceName(), url);
+           String implClassName = ZkRegister.get(rpcRequest.getInterfaceName(), url);
            Class implClass=Class.forName(implClassName);
-           Method method = implClass.getMethod(invocation.getMethodName(), invocation.getParamsTypes());
-           String result = (String) method.invoke(implClass.newInstance(), invocation.getParams());
+           Method method = implClass.getMethod(rpcRequest.getMethodName(), rpcRequest.getParamsTypes());
+           String result = (String) method.invoke(implClass.newInstance(), rpcRequest.getParams());
            //写回结果
            IOUtils.write(result,resp.getOutputStream());
        } catch (IOException e) {

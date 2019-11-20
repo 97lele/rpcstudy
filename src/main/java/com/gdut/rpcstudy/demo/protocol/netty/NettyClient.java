@@ -1,7 +1,10 @@
 package com.gdut.rpcstudy.demo.protocol.netty;
 
-import com.gdut.rpcstudy.demo.framework.Invocation;
+import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcDecoder;
+import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcEncoder;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.URL;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -19,7 +22,7 @@ import io.netty.handler.codec.serialization.ObjectEncoder;
 public class NettyClient {
 
 
-    public String send(URL url, Invocation invocation) {
+    public RpcResponse send(URL url, RpcRequest rpcRequest) {
         //用来保存调用结果的handler
         NettyClientHandler res = new NettyClientHandler();
         NioEventLoopGroup group = new NioEventLoopGroup();
@@ -32,11 +35,12 @@ public class NettyClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            //编码器
-                            ch.pipeline().addLast(new ObjectEncoder());
-                            //反序列化（解码）对象时指定类解析器，null表示使用默认的类加载器
-                            ch.pipeline().addLast(new ObjectDecoder(1024 * 64, ClassResolvers.cacheDisabled(null)));
-                            ch.pipeline().addLast(res);
+                            ch.pipeline()
+                                    //把request实体变为字节
+                                    .addLast(new RpcEncoder(RpcRequest.class))
+                                    //把返回的response字节变为对象
+                                    .addLast(new RpcDecoder(RpcResponse.class))
+                                    .addLast(res);
 
                         }
                     });
@@ -44,9 +48,10 @@ public class NettyClient {
             ChannelFuture future = bootstrap.connect(url.getHostname(), url.getPort()).sync();
             System.out.println("链接成功!" + "host:" + url.getHostname() + " port:" + url.getPort());
             //同步等待调用信息发送成功
-            future.channel().writeAndFlush(invocation).sync();
+            future.channel().writeAndFlush(rpcRequest).sync();
             //同步等待NettyClientHandler的channelRead0被触发后（意味着收到了调用结果）关闭连接
             future.channel().closeFuture().sync();
+
             return res.getResult();
 
         } catch (InterruptedException e) {

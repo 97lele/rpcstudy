@@ -1,8 +1,9 @@
 package com.gdut.rpcstudy.demo.protocol.netty;
 
-import com.gdut.rpcstudy.demo.framework.Invocation;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.Protocol;
 import com.gdut.rpcstudy.demo.framework.URL;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 
 /**
  * @author lulu
@@ -21,9 +22,9 @@ public class NettyProtocol implements Protocol {
     }
 
     @Override
-    public String send(URL url, Invocation invocation) {
+    public RpcResponse send(URL url, RpcRequest rpcRequest) {
         NettyClient nettyClient=new NettyClient();
-        String res = nettyClient.send(url, invocation);
+        RpcResponse res = nettyClient.send(url, rpcRequest);
         return res;
     }
 }

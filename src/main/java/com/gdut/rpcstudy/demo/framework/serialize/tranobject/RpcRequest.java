@@ -1,4 +1,4 @@
-package com.gdut.rpcstudy.demo.framework;
+package com.gdut.rpcstudy.demo.framework.serialize.tranobject;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,9 +12,11 @@ import java.io.Serializable;
  */
 @Data
 @AllArgsConstructor
-public class Invocation implements Serializable {
+public class RpcRequest implements Serializable {
 
     private static final long serialVersionUID = -7789662944864163267L;
+    private String requestId;
+
     private String interfaceName;
 
     private String methodName;

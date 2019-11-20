@@ -1,5 +1,9 @@
 package com.gdut.rpcstudy.demo.protocol.netty;
 
+import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcDecoder;
+import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcEncoder;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import com.gdut.rpcstudy.demo.register.zk.heartbeat.BeatDataSender;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -8,21 +12,13 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.serialization.ClassResolvers;
-import io.netty.handler.codec.serialization.ObjectDecoder;
-import io.netty.handler.codec.serialization.ObjectEncoder;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author lulu
  * @Date 2019/11/15 22:41
  */
 public class NettyServer {
-
-
 
 
     public void start(String hostName, int port) throws InterruptedException {
@@ -39,11 +35,14 @@ public class NettyServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            //自带的对象编码器
-                            ch.pipeline().addLast(new ObjectEncoder());
                             //解码器
-                            ch.pipeline().addLast(new ObjectDecoder(1024 * 64, ClassResolvers.cacheDisabled(null)));
-                            ch.pipeline().addLast(new NettyServerHandler());
+                            ch.pipeline()
+                                    //把request转为字节
+                                    .addLast(new RpcDecoder(RpcRequest.class))
+                                    //把本地执行的response对象转为字节
+                                    .addLast(new RpcEncoder(RpcResponse.class))
+                                    .addLast(new NettyServerHandler());
+
                         }
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功

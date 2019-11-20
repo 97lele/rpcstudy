@@ -1,8 +1,9 @@
 package com.gdut.rpcstudy.demo.protocol.http;
 
-import com.gdut.rpcstudy.demo.framework.Invocation;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.Protocol;
 import com.gdut.rpcstudy.demo.framework.URL;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 
 /**
  * @author lulu
@@ -17,9 +18,9 @@ public class HttpProtocol implements Protocol {
     }
 
     @Override
-    public String send(URL url, Invocation invocation) {
+    public RpcResponse send(URL url, RpcRequest rpcRequest) {
         HttpClient client=new HttpClient();
-        String res = client.post(url.getHostname(), url.getPort(), invocation);
+        RpcResponse res = client.post(url.getHostname(), url.getPort(), rpcRequest);
         return res;
     }
 }
