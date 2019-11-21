@@ -1,6 +1,7 @@
 package com.gdut.rpcstudy.demo.framework;
 
 import com.gdut.rpcstudy.demo.framework.client.RpcStudyClient;
+import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.IAsynCallBack;
 import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
@@ -10,6 +11,9 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author: lele
@@ -17,40 +21,66 @@ import java.util.UUID;
  * 代理工厂，对传入的类进行代理对具体执行的方法进行封装然后发送给服务端进行执行
  */
 public class ProxyFactory {
+    private static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
+            600L, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(65536));
+
+    public static void submit(Runnable task) {
+        threadPoolExecutor.submit(task);
+    }
+
 
     public static <T> T getProxy(Class interfaceClass) {
-        return (T)Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
+        return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 //指定所用协议
-              Protocol protocol=ProtocolFactory.netty();
-              //通过注册中心获取可用链接,这里使用zk
+                Protocol protocol = ProtocolFactory.netty();
+                //通过注册中心获取可用链接,这里使用zk
                 RpcStudyClient annotation = (RpcStudyClient) interfaceClass.getAnnotation(RpcStudyClient.class);
-                URL url= ZkRegister.random(annotation.name());
-                String requestId=UUID.randomUUID().toString().replace("-","");
+                URL url = ZkRegister.random(annotation.name());
+                String requestId = UUID.randomUUID().toString().replace("-", "");
                 //封装方法参数
-                RpcRequest rpcRequest = new RpcRequest(requestId,interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
+                RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
                 //发送请求
                 RpcResponse res = protocol.send(url, rpcRequest);
                 return res.getResult();
             }
-       });
+        });
 
     }
 
-    public static <T> T getAsyncProxy(Class interfaceClass){
-        return (T)Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
+    public static <T> T getAsyncProxy(Class interfaceClass) {
+        return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 //指定所用协议
-                Protocol protocol=ProtocolFactory.netty();
+                Protocol protocol = ProtocolFactory.netty();
                 RpcStudyClient annotation = (RpcStudyClient) interfaceClass.getAnnotation(RpcStudyClient.class);
-                String requestId=UUID.randomUUID().toString().replace("-","");
+                String requestId = UUID.randomUUID().toString().replace("-", "");
                 //封装方法参数
-                RpcRequest rpcRequest = new RpcRequest(requestId,interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
+                RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
                 //发送请求
                 //这里的管理连接池通过服务名去访问zk，获取可用的url
                 RpcFuture res = protocol.sendFuture(annotation.name(), rpcRequest);
+                return res.get();
+            }
+        });
+    }
+
+
+    public static <T> T getAsyncProxyWithCallBack(Class interfaceClass, IAsynCallBack ...callBack) {
+        return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                //指定所用协议
+                Protocol protocol = ProtocolFactory.netty();
+                RpcStudyClient annotation = (RpcStudyClient) interfaceClass.getAnnotation(RpcStudyClient.class);
+                String requestId = UUID.randomUUID().toString().replace("-", "");
+                //封装方法参数
+                RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
+                //发送请求
+                //这里的管理连接池通过服务名去访问zk，获取可用的url
+                RpcFuture res = protocol.sendFutureWithCallBack(annotation.name(), rpcRequest,callBack);
                 return res.get();
             }
         });

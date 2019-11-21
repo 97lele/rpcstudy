@@ -1,5 +1,6 @@
 package com.gdut.rpcstudy.demo.framework;
 
+import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.IAsynCallBack;
 import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
@@ -20,4 +21,6 @@ public interface Protocol {
 
 
     RpcFuture sendFuture(String serviceName,RpcRequest request);
+
+    RpcFuture sendFutureWithCallBack(String serviceName, RpcRequest request, IAsynCallBack...callBacks);
 }

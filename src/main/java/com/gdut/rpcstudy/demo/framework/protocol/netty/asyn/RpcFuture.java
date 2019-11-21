@@ -1,13 +1,17 @@
 package com.gdut.rpcstudy.demo.framework.protocol.netty.asyn;
 
+import com.gdut.rpcstudy.demo.framework.ProxyFactory;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author: lele
@@ -20,6 +24,10 @@ public class RpcFuture implements Future<Object> {
     private RpcRequest rpcRequest;
 
     private Sync sync;
+
+    private List<IAsynCallBack> callBackList=new ArrayList<>();
+
+    private ReentrantLock lock=new ReentrantLock();
 
     public RpcFuture(RpcRequest rpcRequest) {
         this.rpcRequest = rpcRequest;
@@ -46,8 +54,12 @@ public class RpcFuture implements Future<Object> {
     public void done(RpcResponse response) {
         this.rpcResponse = response;
         sync.tryRelease(1);
+        //执行callback
+        invokeCallbacks();
 
     }
+
+
 
     @Override
     public Object get() throws InterruptedException, ExecutionException {
@@ -73,6 +85,49 @@ public class RpcFuture implements Future<Object> {
                     " method:" + rpcRequest.getMethodName() + " interface:" + rpcRequest.getInterfaceName()
             );
         }
+    }
+
+    private void invokeCallbacks() {
+        //锁定
+        lock.lock();
+        try {
+            for (final IAsynCallBack callback : callBackList) {
+                runCallback(callback);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+    //执行回调
+    private void runCallback(final IAsynCallBack callback) {
+        final RpcResponse res = this.rpcResponse;
+        ProxyFactory.submit(new Runnable() {
+            @Override
+            public void run() {
+                if (res.getError()!=null) {
+                    callback.success(res.getResult());
+                } else {
+                    callback.error(new RuntimeException("Response error", new Throwable(res.getError())));
+                }
+            }
+        });
+    }
+
+    //添加回调
+    public RpcFuture addCallback(IAsynCallBack callback) {
+        lock.lock();
+        try {
+            if (isDone()) {
+                //如果在完成后添加的，则直接执行
+                runCallback(callback);
+            } else {
+                //否则加入回调链进行处理
+                this.callBackList.add(callback);
+            }
+        } finally {
+            lock.unlock();
+        }
+        return this;
     }
 
     /**

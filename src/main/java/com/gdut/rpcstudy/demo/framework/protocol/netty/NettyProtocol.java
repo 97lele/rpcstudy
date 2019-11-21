@@ -1,6 +1,7 @@
 package com.gdut.rpcstudy.demo.framework.protocol.netty;
 
 import com.gdut.rpcstudy.demo.framework.connect.ConnectManager;
+import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.IAsynCallBack;
 import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.NettyAsynHandler;
 import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
@@ -38,6 +39,16 @@ public class NettyProtocol implements Protocol {
     public RpcFuture sendFuture(String serviceName, RpcRequest request) {
         NettyAsynHandler handler=ConnectManager.getInstance().getConnectionWithPolling(serviceName);
         RpcFuture future = handler.sendRequest(request);
+        return future;
+    }
+
+    @Override
+    public RpcFuture sendFutureWithCallBack(String serviceName, RpcRequest request, IAsynCallBack... callBacks) {
+        NettyAsynHandler handler=ConnectManager.getInstance().getConnectionWithPolling(serviceName);
+        RpcFuture future = handler.sendRequest(request);
+        for (IAsynCallBack callBack : callBacks) {
+            future.addCallback(callBack);
+        }
         return future;
     }
 }
