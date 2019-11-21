@@ -73,7 +73,7 @@ public class RpcStudyClientRegisty implements ImportBeanDefinitionRegistrar, Bea
 
         //获取bean类名
         String className = annotationMetadata.getClassName();
-        //使用该类定制化生成bean
+        //使用自定义的对象工厂定制化生成bean
         BeanDefinitionBuilder definition = BeanDefinitionBuilder
                 .genericBeanDefinition(RpcStudyClientFactoryBean.class);
         //设置根据类型的注入方式
