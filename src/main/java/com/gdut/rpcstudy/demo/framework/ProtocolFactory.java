@@ -1,7 +1,7 @@
 package com.gdut.rpcstudy.demo.framework;
 
-import com.gdut.rpcstudy.demo.protocol.netty.NettyProtocol;
-import com.gdut.rpcstudy.demo.protocol.http.HttpProtocol;
+import com.gdut.rpcstudy.demo.framework.protocol.netty.NettyProtocol;
+import com.gdut.rpcstudy.demo.framework.protocol.http.HttpProtocol;
 
 /**
  * @author lulu

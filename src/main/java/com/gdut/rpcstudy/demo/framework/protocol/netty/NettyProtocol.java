@@ -1,14 +1,13 @@
-package com.gdut.rpcstudy.demo.protocol.netty;
+package com.gdut.rpcstudy.demo.framework.protocol.netty;
 
+import com.gdut.rpcstudy.demo.framework.connect.ConnectManager;
+import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.NettyAsynHandler;
+import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.Protocol;
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import com.gdut.rpcstudy.demo.framework.server.RpcStudyRegister;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.rmi.registry.Registry;
 
 /**
  * @author lulu
@@ -33,5 +32,12 @@ public class NettyProtocol implements Protocol {
         NettyClient nettyClient=new NettyClient();
         RpcResponse res = nettyClient.send(url, rpcRequest);
         return res;
+    }
+
+    @Override
+    public RpcFuture sendFuture(String serviceName, RpcRequest request) {
+        NettyAsynHandler handler=ConnectManager.getInstance().getConnectionWithPolling(serviceName);
+        RpcFuture future = handler.sendRequest(request);
+        return future;
     }
 }

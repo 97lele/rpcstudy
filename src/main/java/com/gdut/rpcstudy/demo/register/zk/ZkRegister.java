@@ -2,6 +2,7 @@ package com.gdut.rpcstudy.demo.register.zk;
 
 import com.gdut.rpcstudy.demo.consts.ZKConsts;
 import com.gdut.rpcstudy.demo.framework.URL;
+import com.gdut.rpcstudy.demo.framework.connect.ConnectManager;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -10,7 +11,10 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -73,6 +77,36 @@ public class ZkRegister {
         }
     }
 
+    public static Map<String,List<URL>> getAllURL(){
+        Map<String,List<URL>> mapList=null;
+        try {
+            List<String> servcieList=client.getChildren().forPath("/");
+            mapList=new HashMap<>(servcieList.size());
+            for (String s : servcieList) {
+                mapList.put(s,getService(s));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return mapList;
+    }
+
+    public static List<URL> getService(String serviceName){
+        List<URL> urls=null;
+        try {
+           List<String> urlList = client.getChildren().forPath(getPath(serviceName));
+           if(urlList!=null){
+               urls=new ArrayList<>(urlList.size());
+           }
+            for (String s : urlList) {
+                String[] url = s.split(":");
+                urls.add(new URL(url[0], Integer.valueOf(url[1])));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return urls;
+    }
 
     //通过服务名获取具体的url
     public static URL random(String serviceName) {

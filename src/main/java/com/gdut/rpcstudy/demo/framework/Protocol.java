@@ -1,8 +1,8 @@
 package com.gdut.rpcstudy.demo.framework;
 
+import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
-import org.aopalliance.intercept.Invocation;
 
 /**
  * @author lulu
@@ -19,4 +19,5 @@ public interface Protocol {
     RpcResponse send(URL url, RpcRequest rpcRequest);
 
 
+    RpcFuture sendFuture(String serviceName,RpcRequest request);
 }

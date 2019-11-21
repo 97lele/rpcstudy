@@ -18,7 +18,8 @@ public class RpcStudyClientFactoryBean implements FactoryBean<Object> {
     private Class<?> type;
     @Override
     public Object getObject() throws Exception {
-        return ProxyFactory.getProxy(this.type);
+        //这里选择异步handler的代理
+        return ProxyFactory.getAsyncProxy(this.type);
     }
 
     @Override

@@ -1,5 +1,6 @@
-package com.gdut.rpcstudy.demo.protocol.http;
+package com.gdut.rpcstudy.demo.framework.protocol.http;
 
+import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.Protocol;
 import com.gdut.rpcstudy.demo.framework.URL;
@@ -24,4 +25,11 @@ public class HttpProtocol implements Protocol {
         RpcResponse res = client.post(url.getHostname(), url.getPort(), rpcRequest);
         return res;
     }
+
+    @Override
+    public RpcFuture sendFuture(String serviceName, RpcRequest request) {
+        return null;
+    }
+
+
 }

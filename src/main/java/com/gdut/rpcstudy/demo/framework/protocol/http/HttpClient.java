@@ -1,4 +1,4 @@
-package com.gdut.rpcstudy.demo.protocol.http;
+package com.gdut.rpcstudy.demo.framework.protocol.http;
 
 import com.gdut.rpcstudy.demo.framework.serialize.serializer.JsonSerializer;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
