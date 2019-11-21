@@ -35,38 +35,47 @@ public class RpcStudyClientRegisty implements ImportBeanDefinitionRegistrar, Bea
 
 
     private ClassLoader classLoader;
+
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 
 
-        if(DemoApplication.mode ==1){
-           ClassPathScanningCandidateComponentProvider scanner = getScanner();
-           Set<String> basePackages = getBasePackages(importingClassMetadata);
-           //添加扫描条件，属于rpcstudyclient的加入
-           scanner.addIncludeFilter(new AnnotationTypeFilter(RpcStudyClient.class));
+        if (DemoApplication.mode == 1) {
+            //获取指定路径中注解bean定义扫描器
+            ClassPathScanningCandidateComponentProvider scanner = getScanner();
+            //获取扫描的包，通过enable那个注解的属性
+            Set<String> basePackages = getBasePackages(importingClassMetadata);
+            //添加过滤规则，属于rpcstudyclient的加入，excludeFilter则是排除
+            scanner.addIncludeFilter(new AnnotationTypeFilter(RpcStudyClient.class));
 
-           Set<BeanDefinition> candidateBeans=new HashSet<>();
-           for (String basePackage : basePackages) {
-               Set<BeanDefinition> candidateComponents = scanner.findCandidateComponents(basePackage);
-               candidateBeans.addAll(candidateComponents);
-           }
-           for (BeanDefinition candidateBean : candidateBeans) {
-               //如果没有注册
-               if(!registry.containsBeanDefinition(candidateBean.getBeanClassName())){
-                   //判读是否含有注解
-                   if(candidateBean instanceof AnnotatedBeanDefinition){
-                       AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) candidateBean;
-                       AnnotationMetadata annotationMetadata = annotatedBeanDefinition.getMetadata();
-                       Assert.isTrue(annotationMetadata.isInterface(), "@RpcStudeyClient注解只能用在接口上");
-                       Map<String, Object> attributes = annotationMetadata.getAnnotationAttributes(RpcStudyClient.class.getCanonicalName());
+            Set<BeanDefinition> candidateBeans = new HashSet<>();
+            //获取符合条件的bean
+            for (String basePackage : basePackages) {
+                Set<BeanDefinition> candidateComponents = scanner.findCandidateComponents(basePackage);
+                candidateBeans.addAll(candidateComponents);
+            }
+            //spring中用BeanDefintion来表示bean，这里判断bean类型是否合适，合适就注册
+            for (BeanDefinition candidateBean : candidateBeans) {
+                //如果bean还没有注册
+                if (!registry.containsBeanDefinition(candidateBean.getBeanClassName())) {
+                    //判读是否含有注解
+                    if (candidateBean instanceof AnnotatedBeanDefinition) {
+                        //存储该类信息的bean,methodMetadata(方法)，AnnotationMetadata(里面也包括methodMetadata,可以获取注解，类信息等等)
+                        AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) candidateBean;
+                        //获取bean的类信息
+                        AnnotationMetadata annotationMetadata = annotatedBeanDefinition.getMetadata();
+                        //判断其否为接口
+                        Assert.isTrue(annotationMetadata.isInterface(), "@RpcStudeyClient注解只能用在接口上");
+                        Map<String, Object> attributes = annotationMetadata.getAnnotationAttributes(RpcStudyClient.class.getCanonicalName());
 
-                       this.registerRpcClient(registry, annotationMetadata, attributes);
-                   }
-               }
-           }
-       }
+                        this.registerRpcClient(registry, annotationMetadata, attributes);
+                    }
+                }
+            }
+        }
 
     }
+
     //注册bean
     private void registerRpcClient(BeanDefinitionRegistry registry,
                                    AnnotationMetadata annotationMetadata, Map<String, Object> attributes) {
@@ -94,17 +103,16 @@ public class RpcStudyClientRegisty implements ImportBeanDefinitionRegistrar, Bea
     }
 
 
-
-    //复写class扫描的判断
-    protected ClassPathScanningCandidateComponentProvider getScanner(){
+    //复写bean扫描的判断
+    protected ClassPathScanningCandidateComponentProvider getScanner() {
         return new ClassPathScanningCandidateComponentProvider(false
-        ){
+        ) {
             @Override
             protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
                 //存放注解相关信息，具备了class、注解的信息
                 AnnotationMetadata metadata = beanDefinition.getMetadata();
                 //是否是独立能创建对象的，比如class、内部类、静态内部类
-                if(metadata.isIndependent()){
+                if (metadata.isIndependent()) {
                     //用于过滤注解为@RpcClient的注解
                     if (metadata.isInterface() &&
                             metadata.getInterfaceNames().length == 1 &&
@@ -128,32 +136,28 @@ public class RpcStudyClientRegisty implements ImportBeanDefinitionRegistrar, Bea
 
     @Override
     public void setBeanClassLoader(ClassLoader classLoader) {
-        this.classLoader=classLoader;
+        this.classLoader = classLoader;
     }
 
     //获取需要扫描的包位置
     protected Set<String> getBasePackages(AnnotationMetadata importingClassMetadata) {
         Map<String, Object> attributes = importingClassMetadata
                 .getAnnotationAttributes(EnableRpcStudyClient.class.getCanonicalName());
-
-        String[] scanPackages =(String[]) attributes.get("basePackages");
+        String[] scanPackages = (String[]) attributes.get("basePackages");
         Set<String> basePackages = new HashSet<>();
 
-        if(scanPackages.length>0){
-            //添加指定包
+        if (scanPackages.length > 0) {
+            //扫描指定包
             for (String pkg : scanPackages) {
                 if (StringUtils.hasText(pkg)) {
                     basePackages.add(pkg);
                 }
             }
-        }else{
-            //添加所有
+        } else {
+            //扫描主入口所在的包
             basePackages.add(
                     ClassUtils.getPackageName(importingClassMetadata.getClassName()));
         }
-
-
-
         return basePackages;
     }
 
