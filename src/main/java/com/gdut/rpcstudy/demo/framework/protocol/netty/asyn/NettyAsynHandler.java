@@ -32,6 +32,10 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> {
         this.channel=ctx.channel();
     }
 
+    public void close(){
+        this.channel.close();
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcResponse s) throws Exception {
         System.out.println("收到结果：" + s);

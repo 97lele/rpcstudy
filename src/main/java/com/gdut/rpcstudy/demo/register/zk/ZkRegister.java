@@ -7,6 +7,9 @@ import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
@@ -85,11 +88,25 @@ public class ZkRegister {
             for (String s : servcieList) {
                 mapList.put(s,getService(s));
             }
+           /* //设置监听，监听所有服务下的节点变化，当删除由于不活跃移除节点时，连接管理收到通知后移除相应的节点
+            final PathChildrenCache childrenCache = new PathChildrenCache(client, "/user", true);
+            //同步初始监听节点
+            childrenCache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+            childrenCache.getListenable().addListener(new PathChildrenCacheListener() {
+                @Override
+                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+                    if(event.getType().equals(PathChildrenCacheEvent.Type.CHILD_REMOVED)){
+                        System.out.println("删除子节点:" + event.getData().getPath());
+                    }
+                }
+            });*/
         } catch (Exception e) {
             e.printStackTrace();
         }
         return mapList;
     }
+
+
 
     public static List<URL> getService(String serviceName){
         List<URL> urls=null;

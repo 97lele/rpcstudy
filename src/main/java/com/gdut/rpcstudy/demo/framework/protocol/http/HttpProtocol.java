@@ -32,10 +32,7 @@ public class HttpProtocol implements Protocol {
         return null;
     }
 
-    @Override
-    public RpcFuture sendFutureWithCallBack(String serviceName, RpcRequest request, IAsynCallBack... callBacks) {
-        return null;
-    }
+
 
 
 }

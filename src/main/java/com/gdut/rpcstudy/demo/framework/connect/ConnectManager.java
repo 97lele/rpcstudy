@@ -33,7 +33,7 @@ public class ConnectManager {
     //当服务还未链接时，无法获取可用handler，此时通过锁来锁定管理
     private ReentrantLock lock = new ReentrantLock();
 
-    //条件锁，等待
+    //条件锁，等待可用的客户端出现
     private Condition connected = lock.newCondition();
 
     private Boolean isShutDown = false;
@@ -41,7 +41,7 @@ public class ConnectManager {
     //客户端链接服务端超时时间
     private long connectTimeoutMillis = 5000;
 
-    //自定义四个线程组
+    //自定义6个线程组用于客户端服务
     private EventLoopGroup eventLoopGroup = new NioEventLoopGroup(6);
 
     //存放服务对应的访问数，用于轮询
@@ -87,9 +87,11 @@ public class ConnectManager {
     public NettyAsynHandler getConnectionWithPolling(String servicName) {
         Map<URL, NettyAsynHandler> urlNettyAsynHandlerMap = serverClientMap.get(servicName);
         int size = 0;
+        //先尝试获取
         if (urlNettyAsynHandlerMap != null) {
             size = urlNettyAsynHandlerMap.size();
         }
+        //不行就自选等待
         while (!isShutDown && size <= 0) {
             try {
                 //自旋等待可用服务出现，因为客户端与服务链接需要一定的时间，如果直接返回会出现空指针异常
@@ -123,6 +125,23 @@ public class ConnectManager {
         } finally {
             lock.unlock();
         }
+    }
+
+    public void removeURL(URL url){
+        List<String> list=new ArrayList<>();
+        for (Map.Entry<String,Map<URL,NettyAsynHandler>> map:serverClientMap.entrySet()){
+            for (Map.Entry<URL, NettyAsynHandler> urlNettyAsynHandlerEntry : map.getValue().entrySet()) {
+               if( urlNettyAsynHandlerEntry.getKey().equals(url)){
+                   urlNettyAsynHandlerEntry.getValue().close();
+                   list.add(map.getKey()+"@"+urlNettyAsynHandlerEntry.getKey());
+               }
+            }
+        }
+        for (String s : list) {
+            String[] split = s.split("@");
+            serverClientMap.get(split[0]).remove(split[1]);
+        }
+
     }
 
     //唤醒其他的在该条件等待的线程,相当于释放锁
@@ -214,7 +233,7 @@ public class ConnectManager {
     public void stop() {
         isShutDown = true;
         for (Map<URL, NettyAsynHandler> urlNettyAsynHandlerMap : serverClientMap.values()) {
-            urlNettyAsynHandlerMap.values().forEach(e->e.getChannel().close());
+            urlNettyAsynHandlerMap.values().forEach(e->e.close());
         }
         signalAvailableHandler();
         clientBooter.shutdown();

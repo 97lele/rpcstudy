@@ -22,5 +22,4 @@ public interface Protocol {
 
     RpcFuture sendFuture(String serviceName,RpcRequest request);
 
-    RpcFuture sendFutureWithCallBack(String serviceName, RpcRequest request, IAsynCallBack...callBacks);
 }

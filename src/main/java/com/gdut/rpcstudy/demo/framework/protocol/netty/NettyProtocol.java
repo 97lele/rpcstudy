@@ -42,13 +42,5 @@ public class NettyProtocol implements Protocol {
         return future;
     }
 
-    @Override
-    public RpcFuture sendFutureWithCallBack(String serviceName, RpcRequest request, IAsynCallBack... callBacks) {
-        NettyAsynHandler handler=ConnectManager.getInstance().getConnectionWithPolling(serviceName);
-        RpcFuture future = handler.sendRequest(request);
-        for (IAsynCallBack callBack : callBacks) {
-            future.addCallback(callBack);
-        }
-        return future;
-    }
+
 }

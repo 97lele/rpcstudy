@@ -68,21 +68,5 @@ public class ProxyFactory {
     }
 
 
-    public static <T> T getAsyncProxyWithCallBack(Class interfaceClass, IAsynCallBack ...callBack) {
-        return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                //指定所用协议
-                Protocol protocol = ProtocolFactory.netty();
-                RpcStudyClient annotation = (RpcStudyClient) interfaceClass.getAnnotation(RpcStudyClient.class);
-                String requestId = UUID.randomUUID().toString().replace("-", "");
-                //封装方法参数
-                RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
-                //发送请求
-                //这里的管理连接池通过服务名去访问zk，获取可用的url
-                RpcFuture res = protocol.sendFutureWithCallBack(annotation.name(), rpcRequest,callBack);
-                return res.get();
-            }
-        });
-    }
+
 }

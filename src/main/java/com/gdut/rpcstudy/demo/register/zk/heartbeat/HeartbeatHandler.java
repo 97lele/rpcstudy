@@ -37,8 +37,6 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
         if (channelUrlMap.get(id) == null) {
             channelUrlMap.put(id, url);
         }
-
-
     }
 
     @Override

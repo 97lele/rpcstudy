@@ -1,6 +1,7 @@
 package com.gdut.rpcstudy.demo.framework.client;
 
 import com.gdut.rpcstudy.demo.framework.ProxyFactory;
+import io.protostuff.Rpc;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.FactoryBean;
@@ -16,10 +17,17 @@ import org.springframework.stereotype.Component;
 @EqualsAndHashCode(callSuper = false)
 public class RpcStudyClientFactoryBean implements FactoryBean<Object> {
     private Class<?> type;
+
     @Override
     public Object getObject() throws Exception {
         //这里选择异步handler的代理
-        return ProxyFactory.getAsyncProxy(this.type);
+        RpcStudyClient annotation = type.getAnnotation(RpcStudyClient.class);
+        int mode = annotation.mode();
+        if (mode == RpcStudyClient.asyn) {
+            return ProxyFactory.getAsyncProxy(type);
+        }else{
+            return ProxyFactory.getProxy(this.type);
+        }
     }
 
     @Override
