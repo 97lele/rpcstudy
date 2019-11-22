@@ -33,19 +33,29 @@ public class ConnectManager {
 
     private Boolean isShutDown = false;
 
-    //客户端链接服务端超时时间
+    /**
+     * 客户端链接服务端超时时间
+     */
     private long connectTimeoutMillis = 5000;
 
-    //自定义6个线程组用于客户端服务
+    /**
+     * 自定义6个线程组用于客户端服务
+     */
     private EventLoopGroup eventLoopGroup = new NioEventLoopGroup(6);
 
-    //存放服务对应的访问数，用于轮询
+    /**
+     * 存放服务对应的访问数，用于轮询
+     */
     private Map<String, AtomicInteger> pollingMap = new ConcurrentHashMap<>();
 
-    //对于每个服务都有一个锁，每个锁都有个条件队列，用于控制链接获取
-    Map<String, Object[]> serviceCondition = new ConcurrentHashMap<>();
+    /**
+     * 对于每个服务都有一个锁，每个锁都有个条件队列，用于控制链接获取
+     */
+    private Map<String, Object[]> serviceCondition = new ConcurrentHashMap<>();
 
-    //存放服务端地址和handler的关系
+    /**
+     * 存放服务端地址和handler的关系
+     */
     private Map<String, Map<URL, NettyAsynHandler>> serverClientMap = new ConcurrentHashMap<>();
 
     /**
@@ -77,7 +87,12 @@ public class ConnectManager {
     }
 
 
-    //添加该服务对应的链接和handler
+    /**
+     * 添加该服务对应的链接和handler
+     * @param serviceName
+     * @param url
+     * @param handler
+     */
     public void addConnection(String serviceName, URL url, NettyAsynHandler handler) {
         Map<URL, NettyAsynHandler> handlerMap;
         if (!serverClientMap.containsKey(serviceName)) {
@@ -93,7 +108,11 @@ public class ConnectManager {
         signalAvailableHandler(serviceName);
     }
 
-    //获取对应服务下的handler，通过轮询获取
+    /**
+     * 获取对应服务下的handler，通过轮询获取
+     * @param servicName
+     * @return
+     */
     public NettyAsynHandler getConnectionWithPolling(String servicName) {
         Map<URL, NettyAsynHandler> urlNettyAsynHandlerMap = serverClientMap.get(servicName);
         int size = 0;
@@ -178,7 +197,10 @@ public class ConnectManager {
         }
     }
 
-    //添加server，并启动对应的服务器
+    /**
+     * 添加server，并启动对应的服务器
+     * @param allURL
+     */
     public void addServer(Map<String, List<URL>> allURL) {
 
         for (String s : allURL.keySet()) {
@@ -250,8 +272,9 @@ public class ConnectManager {
     }
 
 
-
-    //启动客户端的自定义线程工厂
+    /**
+     * 启动客户端链接的自定义线程工厂
+     */
     static class BooterThreadFactory implements ThreadFactory {
 
         private static final AtomicInteger poolNumber = new AtomicInteger(1);

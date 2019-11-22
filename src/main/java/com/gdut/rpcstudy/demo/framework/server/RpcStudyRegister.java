@@ -40,8 +40,6 @@ public class RpcStudyRegister implements InitializingBean,ApplicationContextAwar
             String hostAddress = InetAddress.getLocalHost().getHostName();
             URL url=new URL(hostAddress,port);
             Protocol server= ProtocolFactory.netty();
-            //注册服务
-            ZkRegister.init();
             ZkRegister.register(name,url);
             server.start(url);
         }
