@@ -24,8 +24,10 @@ public class RpcFuture implements Future<Object> {
 
     private RpcRequest rpcRequest;
 
-    //自定义同步器，这里只是用来改变状态
-    private Sync sync;
+    /**
+     * 自定义同步器，这里只是用来通过自选改变状态
+     */
+     private Sync sync;
 
     public RpcFuture(RpcRequest rpcRequest) {
         this.rpcRequest = rpcRequest;
@@ -43,12 +45,19 @@ public class RpcFuture implements Future<Object> {
         throw new UnsupportedOperationException();
     }
 
-    //返回状态是否改变了
+    /**
+     * 返回状态是否改变了
+     * @return
+     */
     @Override
     public boolean isDone() {
         return sync.isDone();
     }
 
+    /**
+     * 赋值并设置同步器锁状态为1
+     * @param response
+     */
     public void done(RpcResponse response) {
         this.rpcResponse = response;
         sync.tryRelease(1);
@@ -56,15 +65,29 @@ public class RpcFuture implements Future<Object> {
     }
 
 
-
+    /**
+     * 自选等待结果，这里一直执行acquire
+     * 直到tryacquire方法return true即state为1
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     */
     @Override
     public Object get() throws InterruptedException, ExecutionException {
-        //自选等待结果
         sync.acquire(-1);
         return this.rpcResponse;
 
     }
 
+    /**
+     * 超时抛异常
+     * @param timeout
+     * @param unit
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     * @throws TimeoutException
+     */
     @Override
     public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
       //超时获取
@@ -74,7 +97,7 @@ public class RpcFuture implements Future<Object> {
 
     private Object get(boolean success) {
         if (success) {
-            return this.rpcResponse.getResult() != null ? rpcResponse : rpcResponse.getError() != null ? rpcResponse.getError() : null;
+            return this.rpcResponse;
         } else {
             throw new RuntimeException("超时:requestID" + rpcRequest.getRequestId() +
                     " method:" + rpcRequest.getMethodName() + " interface:" + rpcRequest.getInterfaceName()

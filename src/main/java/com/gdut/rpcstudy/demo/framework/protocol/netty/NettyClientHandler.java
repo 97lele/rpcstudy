@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 /**
  * @author lulu
  * @Date 2019/11/15 22:41
- * 用来保存结果
+ * 同步模式下的处理，只是用来保存结果
  */
 @Data
 @EqualsAndHashCode(callSuper = false)

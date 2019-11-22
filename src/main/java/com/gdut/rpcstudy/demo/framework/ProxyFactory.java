@@ -69,7 +69,6 @@ public class ProxyFactory {
                 RpcFuture res = protocol.sendFuture(annotation.name(), rpcRequest);
                 //先尝试一次
                 if (res.isDone()) {
-                    System.out.println("一次就可以");
                     return returnResult(res);
                 }
                 //不行就自旋等待
@@ -81,6 +80,13 @@ public class ProxyFactory {
         });
     }
 
+    /**
+     * 具体的处理异步返回的方法
+     * @param res
+     * @return
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     public static Object returnResult(RpcFuture res) throws ExecutionException, InterruptedException {
         RpcResponse response = (RpcResponse) res.get();
         if (response.getError() != null) {
