@@ -1,5 +1,6 @@
 package com.gdut.rpcstudy.demo.framework.protocol.netty;
 
+import com.gdut.rpcstudy.demo.framework.serialize.handler.BaseCodec;
 import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcDecoder;
 import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcEncoder;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
@@ -40,10 +41,11 @@ public class NettyClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline()
-                                    //把request实体变为字节
+                                    /*//把request实体变为字节
                                     .addLast(new RpcEncoder(RpcRequest.class))
                                     //把返回的response字节变为对象
-                                    .addLast(new RpcDecoder(RpcResponse.class))
+                                    .addLast(new RpcDecoder(RpcResponse.class))*/
+                                    .addLast(new BaseCodec(RpcResponse.class))
                                     .addLast(res);
 
                         }

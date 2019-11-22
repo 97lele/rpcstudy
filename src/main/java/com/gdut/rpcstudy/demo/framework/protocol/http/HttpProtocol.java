@@ -14,7 +14,7 @@ import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 @Deprecated
 public class HttpProtocol implements Protocol {
     @Override
-    public void start(URL url) {
+    public void start(URL url,String serviceName) {
         HttpServer server=new HttpServer();
         server.start(url.getHostname(),url.getPort());
     }

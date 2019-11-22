@@ -19,6 +19,7 @@ public class URL implements Serializable {
     private String hostname;
     private Integer port;
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -30,7 +31,7 @@ public class URL implements Serializable {
 
     @Override
     public String toString() {
-        return hostname+":"+port;
+        return hostname + ":" + port;
     }
 
     @Override

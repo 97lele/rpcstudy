@@ -20,7 +20,7 @@ public class Provider {
         URL url=new URL(hostAddress,8080);
 //        ZkRegister.register(HelloService.class.getName(),url,HelloServiceImpl.class);
         Protocol server= ProtocolFactory.netty();
-        server.start(url);
+        server.start(url,null);
 
     }
 

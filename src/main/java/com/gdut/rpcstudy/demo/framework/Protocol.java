@@ -12,7 +12,7 @@ import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 public interface Protocol {
 
     //服务提供方启动的方法
-    void start(URL url);
+    void start(URL url,String serviceName);
 
     //发送请求
 

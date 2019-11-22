@@ -24,12 +24,10 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<RpcRequest> 
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcRequest rpcRequest) throws Exception {
-        System.out.println("接受请求");
         //这里的port按照本地的端口，可以用其他变量指示
         Object serviceImpl= serviceMap.get(rpcRequest.getInterfaceName());
         Method method= serviceImpl.getClass().getMethod(rpcRequest.getMethodName(), rpcRequest.getParamsTypes());
         Object result=method.invoke(serviceImpl, rpcRequest.getParams());
-        System.out.println("结果-------"+result);
         RpcResponse response=new RpcResponse();
         response.setResult(result);
         response.setRequestId(rpcRequest.getRequestId());

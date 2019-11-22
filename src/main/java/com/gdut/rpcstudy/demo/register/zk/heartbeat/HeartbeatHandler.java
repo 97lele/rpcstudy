@@ -45,13 +45,9 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
         if (evt instanceof IdleStateEvent) {
 
             IdleStateEvent state = (IdleStateEvent) evt;
-            if (state.state().equals(IdleState.READER_IDLE)) {
-                System.out.println("读空闲");
-            } else if (state.state().equals(IdleState.WRITER_IDLE)) {
-                System.out.println("写空闲");
-            }
+
             //在一定时间内读写空闲才会关闭链接
-            else if (state.state().equals(IdleState.ALL_IDLE)) {
+             if (state.state().equals(IdleState.ALL_IDLE)) {
                 if (++inActiveCount == 1) {
                     start = System.currentTimeMillis();
                 }
@@ -60,7 +56,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
                 //5分钟内出现2次以上不活跃现象，有的话就把它去掉
                 if (inActiveCount > 2 && minute <= 5) {
                     System.out.println("移除不活跃的ip");
-                    removeAndClose(ctx);
+                    removeAndClose(ctx,true);
                 } else {
                     //重新计算
                     if (minute >= 5) {
@@ -75,12 +71,15 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    //通过ID获取地址，并删除zk上相关的
-    private void removeAndClose(ChannelHandlerContext ctx) {
+    /**
+     * 通过ID获取地址，并删除zk上相关的，用于心跳监听的类
+     * @param ctx
+     */
+    private void removeAndClose(ChannelHandlerContext ctx,Boolean update) {
         String id = ctx.channel().id().asShortText();
         String url = channelUrlMap.get(id);
         //移除不活跃的节点
-        ZkRegister.remove(url);
+        ZkRegister.getInstance().removeOrUpdate(url,update);
         channelUrlMap.remove(id);
         ctx.channel().close();
     }
@@ -88,7 +87,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
     //当出现异常时关闭链接
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        removeAndClose(ctx);
+        removeAndClose(ctx,false);
     }
 
 

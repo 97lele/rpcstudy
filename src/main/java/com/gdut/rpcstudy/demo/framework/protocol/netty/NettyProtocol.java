@@ -8,6 +8,9 @@ import com.gdut.rpcstudy.demo.framework.Protocol;
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import com.gdut.rpcstudy.demo.framework.server.RpcStudyRegister;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
 
 /**
  * @author lulu
@@ -18,10 +21,10 @@ import com.gdut.rpcstudy.demo.framework.server.RpcStudyRegister;
 public class NettyProtocol implements Protocol {
 
     @Override
-    public void start(URL url) {
-        NettyServer nettyServer=new NettyServer();
+    public void start(URL url,String serviceName) {
+        NettyServer nettyServer = new NettyServer();
         try {
-            nettyServer.start(url.getHostname(),url.getPort(),RpcStudyRegister.serviceMap);
+            nettyServer.start(serviceName,url, RpcStudyRegister.serviceMap);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -29,14 +32,14 @@ public class NettyProtocol implements Protocol {
 
     @Override
     public RpcResponse send(URL url, RpcRequest rpcRequest) {
-        NettyClient nettyClient=new NettyClient();
+        NettyClient nettyClient = new NettyClient();
         RpcResponse res = nettyClient.send(url, rpcRequest);
         return res;
     }
 
     @Override
     public RpcFuture sendFuture(String serviceName, RpcRequest request) {
-        NettyAsynHandler handler=ConnectManager.getInstance().getConnectionWithPolling(serviceName);
+        NettyAsynHandler handler = ConnectManager.getInstance().getConnectionWithPolling(serviceName);
         RpcFuture future = handler.sendRequest(request);
         return future;
     }

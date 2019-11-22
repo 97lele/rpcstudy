@@ -15,7 +15,7 @@ public class HttpServerHandler  {
            ObjectInputStream ois=new ObjectInputStream(inputStream);
            //转换成方法调用参数
            RpcRequest rpcRequest = (RpcRequest) ois.readObject();
-           String hostAddress = InetAddress.getLocalHost().getHostName();
+           String hostAddress = InetAddress.getLocalHost().getRemoteIp();
            URL url=new URL(hostAddress,8080);
            String implClassName = ZkRegister.get(rpcRequest.getInterfaceName(), url);
            Class implClass=Class.forName(implClassName);

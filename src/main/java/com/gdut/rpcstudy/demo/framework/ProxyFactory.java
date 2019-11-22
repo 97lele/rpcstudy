@@ -38,7 +38,7 @@ public class ProxyFactory {
                 Protocol protocol = ProtocolFactory.netty();
                 //通过注册中心获取可用链接,这里使用zk
                 RpcStudyClient annotation = (RpcStudyClient) interfaceClass.getAnnotation(RpcStudyClient.class);
-                URL url = ZkRegister.random(annotation.name());
+                URL url = ZkRegister.getInstance().random(annotation.name());
                 String requestId = UUID.randomUUID().toString().replace("-", "");
                 //封装方法参数
                 RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes(), annotation.mode());
