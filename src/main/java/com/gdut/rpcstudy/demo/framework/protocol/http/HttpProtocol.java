@@ -1,6 +1,5 @@
 package com.gdut.rpcstudy.demo.framework.protocol.http;
 
-import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.IAsynCallBack;
 import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.Protocol;
