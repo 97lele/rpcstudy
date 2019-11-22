@@ -39,6 +39,8 @@ public class ZkRegister {
         init();
     }
 
+
+
     //初始化链接客户端
     private static void init() {
         RetryPolicy retryPolicy = new RetryNTimes(ZKConsts.RETRYTIME, ZKConsts.SLEEP_MS_BEWTEENR_RETRY);

@@ -1,8 +1,10 @@
 package com.gdut.rpcstudy.demo.framework.client;
 
 import com.gdut.rpcstudy.demo.DemoApplication;
+import com.gdut.rpcstudy.demo.framework.connect.ConnectManager;
 import lombok.Data;
 import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -31,7 +33,7 @@ import java.util.Set;
  * 第一个接口获取注册bean能力，第二个接口获取类加载器,仿feignregister写法
  */
 
-public class RpcStudyClientRegisty implements ImportBeanDefinitionRegistrar, BeanClassLoaderAware {
+public class RpcStudyClientRegisty implements ImportBeanDefinitionRegistrar, BeanClassLoaderAware{
 
 
     private ClassLoader classLoader;

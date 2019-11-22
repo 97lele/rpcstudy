@@ -15,6 +15,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -30,12 +31,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ConnectManager {
 
 
-    //当服务还未链接时，无法获取可用handler，此时通过锁来锁定管理
-    private ReentrantLock lock = new ReentrantLock();
-
-    //条件锁，等待可用的客户端出现
-    private Condition connected = lock.newCondition();
-
     private Boolean isShutDown = false;
 
     //客户端链接服务端超时时间
@@ -47,11 +42,15 @@ public class ConnectManager {
     //存放服务对应的访问数，用于轮询
     private Map<String, AtomicInteger> pollingMap = new ConcurrentHashMap<>();
 
+    //对于每个服务都有一个锁，每个锁都有个条件队列，用于控制链接获取
+    Map<String, Object[]> serviceCondition = new ConcurrentHashMap<>();
 
     //存放服务端地址和handler的关系
     private Map<String, Map<URL, NettyAsynHandler>> serverClientMap = new ConcurrentHashMap<>();
 
-    //用来初始化链接
+    /**
+     * 用来初始化客户端
+     */
     private ThreadPoolExecutor clientBooter = new ThreadPoolExecutor(
             16, 16, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1024)
             , new BooterThreadFactory(), new ThreadPoolExecutor.AbortPolicy());
@@ -61,7 +60,14 @@ public class ConnectManager {
     }
 
     private ConnectManager() {
+        //初始化时把所有的url加进去,这里可能没有可用链接，所以需要添加对节点的监听
         Map<String, List<URL>> allURL = ZkRegister.getAllURL();
+        for (String s : allURL.keySet()) {
+            //为每个服务添加锁和条件队列，通过条件队列控制客户端链接获取
+            ReentrantLock lock =new ReentrantLock();
+            Condition condition = lock.newCondition();
+            serviceCondition.put(s,new Object[]{lock,condition});
+        }
         addServer(allURL);
     }
 
@@ -69,6 +75,7 @@ public class ConnectManager {
 
         return Holder.j;
     }
+
 
     //添加该服务对应的链接和handler
     public void addConnection(String serviceName, URL url, NettyAsynHandler handler) {
@@ -78,9 +85,12 @@ public class ConnectManager {
         } else {
             handlerMap = serverClientMap.get(serviceName);
         }
+
         handlerMap.put(url, handler);
+        //添加服务名和对应的url:客户端链接
         serverClientMap.put(serviceName, handlerMap);
-        signalAvailableHandler();
+        //唤醒等待客户端链接的线程
+        signalAvailableHandler(serviceName);
     }
 
     //获取对应服务下的handler，通过轮询获取
@@ -95,7 +105,7 @@ public class ConnectManager {
         while (!isShutDown && size <= 0) {
             try {
                 //自旋等待可用服务出现，因为客户端与服务链接需要一定的时间，如果直接返回会出现空指针异常
-                boolean available = waitingForHandler();
+                boolean available = waitingForHandler(servicName);
                 if (available) {
                     urlNettyAsynHandlerMap = serverClientMap.get(servicName);
                     size = urlNettyAsynHandlerMap.size();
@@ -117,24 +127,32 @@ public class ConnectManager {
         return nettyAsynHandler;
     }
 
-    //等待一定时间，等handler和相应的server建立建立链接
-    private boolean waitingForHandler() throws InterruptedException {
+    /**
+     * 等待一定时间，等handler和相应的server建立建立链接，用条件队列控制
+     * @param serviceName
+     * @return
+     * @throws InterruptedException
+     */
+    private boolean waitingForHandler(String serviceName) throws InterruptedException {
+        Object[] objects = serviceCondition.get(serviceName);
+        ReentrantLock lock = (ReentrantLock) objects[0];
         lock.lock();
+        Condition condition= (Condition) objects[1];
         try {
-            return connected.await(this.connectTimeoutMillis, TimeUnit.MILLISECONDS);
+            return condition.await(this.connectTimeoutMillis, TimeUnit.MILLISECONDS);
         } finally {
             lock.unlock();
         }
     }
 
-    public void removeURL(URL url){
-        List<String> list=new ArrayList<>();
-        for (Map.Entry<String,Map<URL,NettyAsynHandler>> map:serverClientMap.entrySet()){
+    public void removeURL(URL url) {
+        List<String> list = new ArrayList<>();
+        for (Map.Entry<String, Map<URL, NettyAsynHandler>> map : serverClientMap.entrySet()) {
             for (Map.Entry<URL, NettyAsynHandler> urlNettyAsynHandlerEntry : map.getValue().entrySet()) {
-               if( urlNettyAsynHandlerEntry.getKey().equals(url)){
-                   urlNettyAsynHandlerEntry.getValue().close();
-                   list.add(map.getKey()+"@"+urlNettyAsynHandlerEntry.getKey());
-               }
+                if (urlNettyAsynHandlerEntry.getKey().equals(url)) {
+                    urlNettyAsynHandlerEntry.getValue().close();
+                    list.add(map.getKey() + "@" + urlNettyAsynHandlerEntry.getKey());
+                }
             }
         }
         for (String s : list) {
@@ -144,11 +162,17 @@ public class ConnectManager {
 
     }
 
-    //唤醒其他的在该条件等待的线程,相当于释放锁
-    private void signalAvailableHandler() {
+    /**
+     * 释放对应服务的条件队列,代表有客户端链接可用了
+     * @param serviceName
+     */
+    private void signalAvailableHandler(String serviceName) {
+        Object[] objects = serviceCondition.get(serviceName);
+        ReentrantLock lock = (ReentrantLock) objects[0];
         lock.lock();
+        Condition condition= (Condition) objects[1];
         try {
-            connected.signalAll();
+            condition.signalAll();
         } finally {
             lock.unlock();
         }
@@ -161,6 +185,7 @@ public class ConnectManager {
             pollingMap.put(s, new AtomicInteger(0));
             List<URL> urls = allURL.get(s);
             for (URL url : urls) {
+                //提交创建任务
                 clientBooter.submit(new Runnable() {
                     @Override
                     public void run() {
@@ -169,9 +194,15 @@ public class ConnectManager {
                 });
             }
         }
+        System.out.println("初始化客户端ing");
     }
 
-    //创建客户端,持久化链接
+    /**
+     * 创建客户端,持久化链接
+     * @param serviceName
+     * @param eventLoopGroup
+     * @param url
+     */
     public void createClient(String serviceName, EventLoopGroup eventLoopGroup, URL url) {
         Bootstrap b = new Bootstrap();
         b.group(eventLoopGroup)
@@ -184,11 +215,9 @@ public class ConnectManager {
                                 .addLast(new RpcEncoder(RpcRequest.class))
                                 //把返回的response字节变为对象
                                 .addLast(new RpcDecoder(RpcResponse.class))
-                                .addLast(new NettyAsynHandler());
-
+                                .addLast(new NettyAsynHandler(url));
                     }
                 }));
-
 
         ChannelFuture channelFuture = b.connect(url.getHostname(), url.getPort());
 
@@ -205,7 +234,24 @@ public class ConnectManager {
     }
 
 
-    //自定义线程工厂
+    /**
+     * 关闭方法，关闭每个客户端链接，释放所有锁，关掉创建链接的线程池，和客户端的处理器
+     */
+    public void stop() {
+        isShutDown = true;
+        for (Map<URL, NettyAsynHandler> urlNettyAsynHandlerMap : serverClientMap.values()) {
+            urlNettyAsynHandlerMap.values().forEach(e -> e.close());
+        }
+        for(String s:serviceCondition.keySet()){
+            signalAvailableHandler(s);
+        }
+        clientBooter.shutdown();
+        eventLoopGroup.shutdownGracefully();
+    }
+
+
+
+    //启动客户端的自定义线程工厂
     static class BooterThreadFactory implements ThreadFactory {
 
         private static final AtomicInteger poolNumber = new AtomicInteger(1);
@@ -229,15 +275,6 @@ public class ConnectManager {
                     0);
             return t;
         }
-    }
-    public void stop() {
-        isShutDown = true;
-        for (Map<URL, NettyAsynHandler> urlNettyAsynHandlerMap : serverClientMap.values()) {
-            urlNettyAsynHandlerMap.values().forEach(e->e.close());
-        }
-        signalAvailableHandler();
-        clientBooter.shutdown();
-        eventLoopGroup.shutdownGracefully();
     }
 
 }

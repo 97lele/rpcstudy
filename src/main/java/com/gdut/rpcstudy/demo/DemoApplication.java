@@ -12,7 +12,7 @@ import java.util.Arrays;
 @EnableRpcStudyClient(basePackages = {"com.gdut.rpcstudy.demo"})
 public class DemoApplication {
     //server为0，client为1
-    public static Integer mode=1;
+    public static Integer mode=0;
     public static void main(String[] args) {
 
         SpringApplication application=new SpringApplication(DemoApplication.class);
