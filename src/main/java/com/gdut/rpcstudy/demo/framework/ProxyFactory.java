@@ -12,6 +12,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
  * 代理工厂，对传入的类进行代理对具体执行的方法进行封装然后发送给服务端进行执行
  */
 public class ProxyFactory {
+    //用于执行future回调
     private static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
             600L, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(65536));
 
@@ -40,10 +42,14 @@ public class ProxyFactory {
                 URL url = ZkRegister.random(annotation.name());
                 String requestId = UUID.randomUUID().toString().replace("-", "");
                 //封装方法参数
-                RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
+                RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes(), annotation.mode());
                 //发送请求
                 RpcResponse res = protocol.send(url, rpcRequest);
-                return res.getResult();
+                if (res.getError() != null) {
+                    throw new RuntimeException(res.getError());
+                } else {
+                    return res.getResult();
+                }
             }
         });
 
@@ -58,15 +64,32 @@ public class ProxyFactory {
                 RpcStudyClient annotation = (RpcStudyClient) interfaceClass.getAnnotation(RpcStudyClient.class);
                 String requestId = UUID.randomUUID().toString().replace("-", "");
                 //封装方法参数
-                RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes());
+                RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes(), annotation.mode());
                 //发送请求
                 //这里的管理连接池通过服务名去访问zk，获取可用的url
                 RpcFuture res = protocol.sendFuture(annotation.name(), rpcRequest);
-                return res.get();
+                //先尝试一次
+                if (res.isDone()) {
+                    System.out.println("一次就可以");
+                    return returnResult(res);
+                }
+                //不行就自旋等待
+                while (!res.isDone()) {
+
+                }
+                return returnResult(res);
             }
         });
     }
 
+    public static Object returnResult(RpcFuture res) throws ExecutionException, InterruptedException {
+        RpcResponse response = (RpcResponse) res.get();
+        if (response.getError() != null) {
+            throw new RuntimeException(response.getError());
+        } else {
+            return response.getResult();
+        }
+    }
 
 
 }

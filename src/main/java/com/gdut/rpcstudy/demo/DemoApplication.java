@@ -16,7 +16,7 @@ public class DemoApplication {
     public static void main(String[] args) {
 
         SpringApplication application=new SpringApplication(DemoApplication.class);
-        //client模式时加注释
+        //server模式时去掉web容器
         if(mode==0){
             application.setWebApplicationType(WebApplicationType.NONE);
         }

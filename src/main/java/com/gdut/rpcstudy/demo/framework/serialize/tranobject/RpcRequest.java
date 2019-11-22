@@ -23,4 +23,6 @@ public class RpcRequest  {
     private Object[] params;
     //防止重载
     private Class[] paramsTypes;
+    //是否异步
+    private int mode;
 }

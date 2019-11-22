@@ -27,11 +27,6 @@ public class RpcFuture implements Future<Object> {
     //自定义同步器，这里只是用来改变状态
     private Sync sync;
 
-    //回调函数集合
-    private List<IAsynCallBack> callBackList=new ArrayList<>();
-
-    private ReentrantLock lock=new ReentrantLock();
-
     public RpcFuture(RpcRequest rpcRequest) {
         this.rpcRequest = rpcRequest;
         this.sync = new Sync();
@@ -57,8 +52,6 @@ public class RpcFuture implements Future<Object> {
     public void done(RpcResponse response) {
         this.rpcResponse = response;
         sync.tryRelease(1);
-        //执行callback
-        invokeCallbacks();
 
     }
 
@@ -68,8 +61,7 @@ public class RpcFuture implements Future<Object> {
     public Object get() throws InterruptedException, ExecutionException {
         //自选等待结果
         sync.acquire(-1);
-        return this.rpcResponse.getResult() != null ? rpcResponse :
-                rpcResponse.getError() != null ? rpcResponse.getError() : null;
+        return this.rpcResponse;
 
     }
 
@@ -90,48 +82,7 @@ public class RpcFuture implements Future<Object> {
         }
     }
 
-    private void invokeCallbacks() {
-        //锁定
-        lock.lock();
-        try {
-            for (final IAsynCallBack callback : callBackList) {
-                runCallback(callback);
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-    //执行回调
-    private void runCallback(final IAsynCallBack callback) {
-        final RpcResponse res = this.rpcResponse;
-        ProxyFactory.submit(new Runnable() {
-            @Override
-            public void run() {
-                if (res.getError()!=null) {
-                    callback.success(res.getResult());
-                } else {
-                    callback.error(new RuntimeException("Response error"+res.getError()));
-                }
-            }
-        });
-    }
 
-    //添加回调
-    public RpcFuture addCallback(IAsynCallBack callback) {
-        lock.lock();
-        try {
-            if (isDone()) {
-                //如果在完成后添加的，则直接执行
-                runCallback(callback);
-            } else {
-                //否则加入回调链进行处理
-                this.callBackList.add(callback);
-            }
-        } finally {
-            lock.unlock();
-        }
-        return this;
-    }
 
     /**
      * 继承同步器，这里只是用来自旋改变状态，根据state来实现，state初始为0

@@ -1,5 +1,6 @@
 package com.gdut.rpcstudy.demo.framework.protocol.netty;
 
+import com.gdut.rpcstudy.demo.framework.client.RpcStudyClient;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import io.netty.channel.*;
@@ -12,6 +13,7 @@ import java.util.Map;
  * @Date 2019/11/15 22:41
  */
 public class NettyServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
+
 
     //存放服务的map
     Map<String,Object> serviceMap;
@@ -36,7 +38,10 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<RpcRequest> 
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
                 System.out.println("发送了结果"+response);
-                ctx.channel().close();
+                if(rpcRequest.getMode()==RpcStudyClient.sync){
+                    ctx.channel().close();
+                }
+//   当异步模式时，不关闭链接
             }
         });
 //        ReferenceCountUtil.release(rpcRequest); 默认实现，如果只是普通的adapter则需要释放对象

@@ -2,6 +2,7 @@ package com.gdut.rpcstudy.demo.framework.serialize.handler;
 
 import com.gdut.rpcstudy.demo.framework.serialize.serializer.JsonSerializer;
 import com.gdut.rpcstudy.demo.framework.serialize.serializer.ProtobufSerializer;
+import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -40,6 +41,7 @@ public class RpcDecoder extends ByteToMessageDecoder {
         byteBuf.readBytes(data);
         //解码转成对象
         Object res = serializer.deserialize(data, target);
+
         //给后面的handler处理
         list.add(res);
 

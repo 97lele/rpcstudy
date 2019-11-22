@@ -23,11 +23,7 @@ public class RpcStudyClientFactoryBean implements FactoryBean<Object> {
         //这里选择异步handler的代理
         RpcStudyClient annotation = type.getAnnotation(RpcStudyClient.class);
         int mode = annotation.mode();
-        if (mode == RpcStudyClient.asyn) {
-            return ProxyFactory.getAsyncProxy(type);
-        }else{
-            return ProxyFactory.getProxy(this.type);
-        }
+        return mode==RpcStudyClient.asyn?ProxyFactory.getAsyncProxy(this.type):ProxyFactory.getProxy(this.type);
     }
 
     @Override
