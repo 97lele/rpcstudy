@@ -4,7 +4,7 @@ import com.gdut.rpcstudy.demo.framework.client.RpcStudyClient;
 import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
-import com.gdut.rpcstudy.demo.register.zk.ZkRegister;
+import com.gdut.rpcstudy.demo.register.zk.RegisterForClient;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -38,7 +38,7 @@ public class ProxyFactory {
                 Protocol protocol = ProtocolFactory.netty();
                 //通过注册中心获取可用链接,这里使用zk
                 RpcStudyClient annotation = (RpcStudyClient) interfaceClass.getAnnotation(RpcStudyClient.class);
-                URL url = ZkRegister.getInstance().random(annotation.name());
+                URL url = RegisterForClient.getInstance().random(annotation.name());
                 String requestId = UUID.randomUUID().toString().replace("-", "");
                 //封装方法参数
                 RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes(), annotation.mode());

@@ -1,6 +1,7 @@
 package com.gdut.rpcstudy.demo.framework.connect;
 
 import com.gdut.rpcstudy.demo.framework.URL;
+import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.NettyAsynHandler;
 import com.gdut.rpcstudy.demo.utils.ZkUtils;
 import org.apache.curator.framework.CuratorFramework;
 
@@ -13,23 +14,11 @@ import java.util.List;
  */
 public interface FetchPolicy {
 
-    URL get(String serviceName, CuratorFramework client);
+    NettyAsynHandler random(String serviceName);
+    NettyAsynHandler polling(String serviceName);
+    NettyAsynHandler weight(String serviceName);
 
 
-    class RandomPolicy implements FetchPolicy{
 
-        @Override
-        public URL get(String serviceName, CuratorFramework client) {
-            //通过服务名获取具体的url
-                try {
-                    List<String> urlList = client.getChildren().forPath(ZkUtils.getPath(serviceName));
-                    String[] url = urlList.get(0).split(":");
-                    return new URL(url[0], Integer.valueOf(url[1]));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return null;
 
-        }
-    }
 }

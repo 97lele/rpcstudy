@@ -29,7 +29,7 @@ public class RpcDecoder extends ByteToMessageDecoder {
      */
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> list) throws Exception {
-        System.out.println("收到字节");
+
         //如果小于一个int的长度，不作处理
         if (byteBuf.readableBytes() < 4) {
             return;

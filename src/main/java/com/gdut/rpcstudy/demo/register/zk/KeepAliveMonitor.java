@@ -1,5 +1,6 @@
 package com.gdut.rpcstudy.demo.register.zk;
 
+import com.gdut.rpcstudy.demo.register.zk.heartbeat.ChannelStatus;
 import com.gdut.rpcstudy.demo.register.zk.heartbeat.HeartbeatHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -20,14 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Date 2019/11/18 22:17
  * 注册中心心跳检查服务器，通过查看心跳来查看各server是否存活
  */
-public class ZkServer {
+public class KeepAliveMonitor {
 
     public static void main(String[] args) {
+    final ConcurrentHashMap<String, ChannelStatus> channelUrlMap = new ConcurrentHashMap<>();
 
         NioEventLoopGroup boss = new NioEventLoopGroup();
         NioEventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
-        ConcurrentHashMap<String,String> ChannalIdUrlMap=new ConcurrentHashMap();
         try {
             bootstrap.group(boss, worker)
                     .channel(NioServerSocketChannel.class)
@@ -43,9 +44,9 @@ public class ZkServer {
                             //string解码器
                             .addLast(new StringDecoder())
                                     //链接空闲时间
-                            .addLast(new IdleStateHandler(0,0,60))
+                            .addLast(new IdleStateHandler(0,0,30))
                            //hearbeat处理器
-                            .addLast(new HeartbeatHandler(ChannalIdUrlMap));
+                            .addLast(new HeartbeatHandler(channelUrlMap));
                         }
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功

@@ -2,13 +2,12 @@ package com.gdut.rpcstudy.demo.framework.protocol.netty;
 
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.serialize.handler.BaseCodec;
-import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcDecoder;
-import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcEncoder;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
-import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
+import com.gdut.rpcstudy.demo.register.zk.RegisterForServer;
 import com.gdut.rpcstudy.demo.register.zk.heartbeat.BeatDataSender;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -16,6 +15,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.util.Map;
+import java.util.concurrent.*;
 
 
 /**
@@ -24,8 +24,9 @@ import java.util.Map;
  */
 public class NettyServer {
     BeatDataSender beatDataSender;
+    private ExecutorService beatDataTask = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1));
 
-    public void start(String servicName,URL url, Map<String, Object> serviceMap) throws InterruptedException {
+    public void start(String servicName, URL url, Map<String, Object> serviceMap) throws InterruptedException {
         NioEventLoopGroup boss = new NioEventLoopGroup();
         NioEventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -53,9 +54,17 @@ public class NettyServer {
                         }
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功
-            ChannelFuture future = bootstrap.bind(url.getHostname(), url.getPort()).sync();
+            ChannelFuture future = bootstrap.bind(url.getHostname(), url.getPort()).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    //绑定成功后，修改子节点
+                    if(future.isSuccess()){
+                        RegisterForServer.getInstance().serverOn(servicName,url);
+                    }
+                }
+            });
             //添加发送心跳
-//           beatDataSender = new BeatDataSender(url.toString(),"127.0.0.1",8888,servicName);
+//            beatDataTask.submit(() -> beatDataSender = new BeatDataSender(url.toString(), ZKConsts.KEEPALIVEMONITOR_ADDRESS, ZKConsts.KEEPALIVEMONITOR_PORT, servicName));
 
             future.channel().closeFuture().sync();
         } catch (Exception e) {

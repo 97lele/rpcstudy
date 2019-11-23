@@ -21,7 +21,6 @@ public class RpcEncoder extends MessageToByteEncoder {
     }
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, Object o, ByteBuf byteBuf) throws Exception {
-        System.out.println("转成字节");
         if (entity.equals(o.getClass())) {
             byte[] data=serializer.serialize(o);
             //写入消息长度,这里还可以写入版本号、魔数等协议信息

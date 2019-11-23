@@ -2,6 +2,5 @@
 spring:
   application:
     name: user
-
 rpcstudy:
- port: 8081
+ port: 8082

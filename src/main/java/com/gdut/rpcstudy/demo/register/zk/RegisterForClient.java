@@ -1,35 +1,33 @@
 package com.gdut.rpcstudy.demo.register.zk;
 
+import com.gdut.rpcstudy.demo.consts.ZKConsts;
 import com.gdut.rpcstudy.demo.framework.URL;
-import com.gdut.rpcstudy.demo.framework.connect.ConnectManager;
 import com.gdut.rpcstudy.demo.framework.connect.NodeChangeListener;
 import com.gdut.rpcstudy.demo.framework.connect.NodeChangePublisher;
+import com.gdut.rpcstudy.demo.utils.RpcThreadFactoryBuilder;
 import com.gdut.rpcstudy.demo.utils.ZkUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.ZooDefs;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
+import static com.gdut.rpcstudy.demo.consts.ZKConsts.ACTIVE;
 
 /**
  * @author lulu
- * @Date 2019/11/18 21:17
- * 负责实现注册中心具体的业务功能
+ * @Date 2019/11/23 22:49
+ *
  */
-public class ZkRegister implements NodeChangePublisher {
-
-
-    public static final Integer INACTIVE = 0;
+public class RegisterForClient implements NodeChangePublisher {
 
     private CuratorFramework client = null;
 
@@ -37,82 +35,42 @@ public class ZkRegister implements NodeChangePublisher {
 
     private List<NodeChangeListener> nodeChangeListeners = new ArrayList<>();
 
+    private ThreadPoolExecutor notifyPool = new ThreadPoolExecutor(
+            16, 16, 5, TimeUnit.MINUTES, new ArrayBlockingQueue<>(1024)
+            , new RpcThreadFactoryBuilder().setNamePrefix("notifyPool").build()
+    );
+
+
+
 
     private static class Holder {
-        private static final ZkRegister j = new ZkRegister();
+        private static final RegisterForClient j = new RegisterForClient();
     }
 
-    private ZkRegister() {
+    public static RegisterForClient getInstance() {
+        return Holder.j;
+    }
+
+    private RegisterForClient() {
         client = ZkUtils.getClient();
         this.addListener(new NodeChangeListener.AddServer());
         this.addListener(new NodeChangeListener.RemoveServer());
         this.addListener(new NodeChangeListener.InactiveServer());
+        this.addListener(new NodeChangeListener.ReActiveServer());
     }
 
-    public static ZkRegister getInstance() {
 
-        return Holder.j;
-    }
-
-    public URL random(String serviceName) {
-
-        //通过服务名获取具体的url
-        try {
-            List<String> urlList = client.getChildren().forPath(ZkUtils.getPath(serviceName));
-            String[] url = urlList.get(0).split(":");
-            return new URL(url[0], Integer.valueOf(url[1]));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-
-    }
-
-    //注册接口、对应服务ip及其实现类
-    public void register(String serviceName, URL url) {
-        try {
-            client.create()
-                    .creatingParentsIfNeeded()
-                    //临时节点
-                    .withMode(CreateMode.EPHEMERAL)
-                    //任何人都可以访问
-                    .withACL(ZooDefs.Ids.OPEN_ACL_UNSAFE)
-                    .forPath(ZkUtils.getPath(serviceName, url.toString()));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    //hostname:port,遍历所有interface节点，把对应的url节点去掉,或者标记为不活跃的状态
-    public void removeOrUpdate(String sl, Boolean update) {
-        String[] serviceUrl=sl.split("@");
-        try {
-            String url=serviceUrl[1];
-            String anInterface=serviceUrl[0];
-                List<String> urlList = client.getChildren().forPath(ZkUtils.getPath(anInterface));
-                for (String s : urlList) {
-                    if (s.equals(url)) {
-                        if (update) {
-                            client.setData().forPath(ZkUtils.getPath(anInterface, url), INACTIVE.toString().getBytes());
-                        } else {
-                            client.delete().forPath(ZkUtils.getPath(anInterface, url));
-                        }
-                    }
-                }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     /**
      * 获取所有的url
+     *
      * @return
      */
     public Map<String, List<URL>> getAllURL() {
         Map<String, List<URL>> mapList = null;
         try {
             List<String> servcieList = client.getChildren().forPath("/");
+
             mapList = new HashMap<>(servcieList.size());
             for (String s : servcieList) {
                 //返回对应的service及其可用的url
@@ -136,26 +94,35 @@ public class ZkRegister implements NodeChangePublisher {
             @Override
             public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
                 if (event.getType().equals(PathChildrenCacheEvent.Type.INITIALIZED)) {
+                    //建立完监听
                     return;
                 }
-
                 if (event.getType().equals(PathChildrenCacheEvent.Type.CHILD_REMOVED)) {
                     String path = event.getData().getPath();
+                    notifyPool.submit(() -> {
+                        System.out.println("删除远程服务端节点:" + path);
+                        notifyListener(NodeChangeListener.remove, path);
+                    });
                     //格式 service:url
-                    System.out.println("删除子节点:" + path);
-                    notifyListener(NodeChangeListener.remove, path);
-                }
-                if (event.getType().equals(PathChildrenCacheEvent.Type.CHILD_ADDED)) {
-                    String path = event.getData().getPath();
-                    System.out.println("新增子节点事件" + path);
-                    notifyListener(NodeChangeListener.add, path);
                 }
                 if (event.getType().equals(PathChildrenCacheEvent.Type.CHILD_UPDATED)) {
                     String path = event.getData().getPath();
-                    System.out.println("修改子节点");
-                    if(new String(event.getData().getData()).equals(INACTIVE)){
-                        notifyListener(NodeChangeListener.inactive, path);
-                    }
+                    notifyPool.submit(() -> {
+                        byte[] status = event.getData().getData();
+                        String serverStatus= new String(status);
+                        if (serverStatus.equals(ACTIVE)) {
+                            System.out.println("远程服务端上线事件:" + NodeChangeListener.add + path);
+                            notifyListener(NodeChangeListener.add, path);
+                        } else if (serverStatus.equals(ZKConsts.INACTIVE)) {
+                            //失效事件
+                            System.out.println("远程服务端下线事件：" + NodeChangeListener.inactive + path);
+                            notifyListener(NodeChangeListener.inactive, path);
+                        } else if (serverStatus.equals(ZKConsts.REACTIVE)) {
+                            System.out.println("远程服务端重新上线事件：" + path);
+                            notifyListener(NodeChangeListener.reactive, path);
+                        }
+                    });
+
                 }
             }
         });
@@ -179,6 +146,41 @@ public class ZkRegister implements NodeChangePublisher {
         return urls;
     }
 
+    //hostname:port,遍历所有interface节点，把对应的url节点去掉,或者标记为不活跃的状态
+    public void removeOrUpdate(String sl, Boolean update, String data) {
+        String[] serviceUrl = sl.split("@");
+        try {
+            String url = serviceUrl[1];
+            String anInterface = serviceUrl[0];
+            List<String> urlList = client.getChildren().forPath(ZkUtils.getPath(anInterface));
+            for (String s : urlList) {
+                if (s.equals(url)) {
+                    if (update) {
+                        client.setData().forPath(ZkUtils.getPath(anInterface, url), data.getBytes());
+                    } else {
+                        client.delete().forPath(ZkUtils.getPath(anInterface, url));
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public URL random(String serviceName) {
+
+        //通过服务名获取具体的url
+        try {
+            List<String> urlList = client.getChildren().forPath(ZkUtils.getPath(serviceName));
+            String[] url = urlList.get(0).split(":");
+            return new URL(url[0], Integer.valueOf(url[1]));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+
+    }
+
     public void close() {
         ZkUtils.closeZKClient(client);
         nodeListenList.forEach(e -> {
@@ -189,7 +191,6 @@ public class ZkRegister implements NodeChangePublisher {
             }
         });
     }
-
 
     @Override
     public void addListener(NodeChangeListener listener) {

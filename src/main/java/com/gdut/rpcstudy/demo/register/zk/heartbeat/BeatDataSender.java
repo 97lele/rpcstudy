@@ -1,6 +1,6 @@
 package com.gdut.rpcstudy.demo.register.zk.heartbeat;
 
-import com.gdut.rpcstudy.demo.register.zk.ZkRegister;
+import com.gdut.rpcstudy.demo.consts.ZKConsts;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -9,7 +9,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.string.StringEncoder;
 import lombok.Getter;
 
-import java.util.Random;
 import java.util.concurrent.*;
 
 
@@ -19,12 +18,12 @@ import java.util.concurrent.*;
  */
 @Getter
 public class BeatDataSender {
-    private int active = 1;
+    private String active ;
 
 
     private ScheduledExecutorService service;
     private ScheduledExecutorService retryConnect;
-    private Channel channel;
+    private boolean reconnect = false;
 
     public BeatDataSender(String localAddress, String remoteIp, Integer remotePort, String serviceName) {
         service = Executors.newSingleThreadScheduledExecutor();
@@ -32,11 +31,13 @@ public class BeatDataSender {
         this.send(localAddress, remoteIp, remotePort, serviceName);
         //如果重连了尝试重新发送心跳包
         retryConnect.scheduleAtFixedRate(() -> {
-            if (active == ZkRegister.INACTIVE) {
+            if (active == ZKConsts.INACTIVE) {
+                System.out.println("server尝试重连监控器");
                 send(localAddress, remoteIp, remotePort, serviceName);
-                active = 1;
+                active = ZKConsts.REACTIVE;
+                reconnect = true;
             }
-        }, 10, 10, TimeUnit.MINUTES);
+        }, 3, 3, TimeUnit.MINUTES);
     }
 
     public void close() {
@@ -58,31 +59,38 @@ public class BeatDataSender {
                                     .addLast(new ChannelInboundHandlerAdapter() {
                                         @Override
                                         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-                                            active = ZkRegister.INACTIVE;
-                                            System.out.println("由于不活跃次数在5分钟内超过2次,链接被关闭");
+                                            active = ZKConsts.INACTIVE;
+                                            System.out.println("由于不活跃次数在2分钟内超过3次,链接被关闭");
                                             ctx.channel().close();
-                                            channel = null;
                                         }
                                     });
 
                         }
                     })
-                    .connect(remoteIp, remotePort).sync();
-            System.out.println("心跳客户端绑定" + "hostname:" + remoteIp + "remotePort:" + remotePort);
-            this.channel = connect.channel();
+                    .connect(remoteIp, remotePort).addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            if (future.isSuccess()) {
+                                System.out.println("心跳客户端绑定" + "hostname:" + remoteIp + "remotePort:" + remotePort);
+                                future.channel().writeAndFlush(serviceName + "@" + localAddress);
+                                //这里只是演示心跳机制不活跃的情况下重连，普通的做法只需要定时发送本机地址即可
+                                //进入重连状态后，就稳定发送心跳包
+                                service.scheduleAtFixedRate(() -> {
+                                    if (future.channel().isActive()) {
+                                        if (reconnect) {
+                                            future.channel().writeAndFlush(serviceName + "@" + localAddress);
+                                        }
+                                    }
+                                }, 30, 30, TimeUnit.SECONDS);
+                            } else {
+                                System.out.println("3s后重连");
+                                TimeUnit.SECONDS.sleep(3);
+                                send(localAddress, remoteIp, remotePort, serviceName);
+                            }
 
-            this.channel.writeAndFlush(serviceName + "@" + localAddress);
-            //这里只是演示心跳机制不活跃的情况下重连，普通的做法只需要定时发送本机地址即可
-            service.scheduleAtFixedRate(() -> {
-                if (connect.channel().isActive()) {
-                    int time = new Random().nextInt(5);
-                    System.out.println(time);
-                    if (time > 3) {
-                        System.out.println("发送本机地址：" + localAddress);
-                        connect.channel().writeAndFlush(serviceName + "@" + localAddress);
-                    }
-                }
-            }, 60, 60, TimeUnit.SECONDS);
+                        }
+                    });
+
 
         } catch (Exception e) {
             e.printStackTrace();

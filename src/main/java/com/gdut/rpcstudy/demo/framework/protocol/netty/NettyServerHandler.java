@@ -23,6 +23,26 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<RpcRequest> 
     }
 
     @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        System.out.println(ctx.channel().id().asShortText()+"注册");
+    }
+
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        System.out.println(ctx.channel().id().asShortText()+"注销");
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println(ctx.channel().id().asShortText()+"活跃");
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println(ctx.channel().id().asShortText()+"不活跃");
+    }
+
+    @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcRequest rpcRequest) throws Exception {
         //这里的port按照本地的端口，可以用其他变量指示
         Object serviceImpl= serviceMap.get(rpcRequest.getInterfaceName());

@@ -4,7 +4,7 @@ import com.gdut.rpcstudy.demo.DemoApplication;
 import com.gdut.rpcstudy.demo.framework.Protocol;
 import com.gdut.rpcstudy.demo.framework.ProtocolFactory;
 import com.gdut.rpcstudy.demo.framework.URL;
-import com.gdut.rpcstudy.demo.register.zk.ZkRegister;
+import com.gdut.rpcstudy.demo.register.zk.RegisterForServer;
 import lombok.Data;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
@@ -40,7 +40,7 @@ public class RpcStudyRegister implements InitializingBean,ApplicationContextAwar
             String hostAddress = InetAddress.getLocalHost().getHostName();
             URL url=new URL(hostAddress,port);
             Protocol server= ProtocolFactory.netty();
-            ZkRegister.getInstance().register(name,url);
+            RegisterForServer.getInstance().register(name,url);
             server.start(url,name);
         }
 

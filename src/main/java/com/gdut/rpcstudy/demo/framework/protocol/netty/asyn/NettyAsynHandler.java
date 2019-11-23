@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> {
+public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> implements Comparable{
     //key:requestId,value自定义future
     private ConcurrentHashMap<String, RpcFuture> resultMap = new ConcurrentHashMap<>();
 
@@ -28,6 +28,18 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> {
     //对应的远端URL
     private final URL url;
 
+    private long inActiveTime;
+
+    private Integer weight=5;
+    public NettyAsynHandler(URL url){
+        this.url=url;
+    }
+    public NettyAsynHandler(URL url,Integer weight){
+        this.url=url;
+        if(weight!=null){
+            this.weight=weight;
+        }
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -63,8 +75,27 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> {
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
                 System.out.println("发送了消息" + rpcRequest.toString());
                 latch.countDown();
+
             }
         });
         return future;
+    }
+
+    //检查任务时使用
+    @Override
+    public int compareTo(Object o) {
+        if(o instanceof NettyAsynHandler){
+            long current=System.currentTimeMillis();
+            NettyAsynHandler other= (NettyAsynHandler) o;
+            //其他的超时时间
+            long otherInActiveTime=current-other.inActiveTime;
+            //自己的超时时间
+            long thisInActiveTime=current-this.inActiveTime;
+            //超时时间越大的排序反而越小，优先队列为小顶堆
+           return thisInActiveTime> otherInActiveTime?-1:thisInActiveTime==otherInActiveTime?0:1;
+        }else{
+            throw new UnsupportedOperationException("类型异常!");
+        }
+
     }
 }
