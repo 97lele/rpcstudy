@@ -31,7 +31,7 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
 
     private long inActiveTime;
     //请求数
-    private AtomicInteger requestCount;
+    private AtomicInteger requestCount=new AtomicInteger(0);
 
     private Integer weight = 5;
 
@@ -44,7 +44,6 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
         if (weight != null) {
             this.weight = weight;
         }
-        requestCount=new AtomicInteger(0);
     }
 
     @Override
