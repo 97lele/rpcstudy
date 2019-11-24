@@ -44,6 +44,7 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
         if (weight != null) {
             this.weight = weight;
         }
+        requestCount=new AtomicInteger(0);
     }
 
     @Override

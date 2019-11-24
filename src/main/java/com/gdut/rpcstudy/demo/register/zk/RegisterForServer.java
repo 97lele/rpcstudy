@@ -20,6 +20,9 @@ public class RegisterForServer {
     private static class Holder {
         private static final RegisterForServer j = new RegisterForServer();
     }
+    public RegisterForServer(){
+        client = ZkUtils.getClient();
+    }
 
     public static RegisterForServer getInstance() {
         return RegisterForServer.Holder.j;

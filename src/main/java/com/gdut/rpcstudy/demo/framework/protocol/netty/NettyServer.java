@@ -1,5 +1,6 @@
 package com.gdut.rpcstudy.demo.framework.protocol.netty;
 
+import com.gdut.rpcstudy.demo.consts.ZKConsts;
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.serialize.handler.BaseCodec;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
@@ -64,7 +65,7 @@ public class NettyServer {
                 }
             });
             //添加发送心跳
-//            beatDataTask.submit(() -> beatDataSender = new BeatDataSender(url.toString(), ZKConsts.KEEPALIVEMONITOR_ADDRESS, ZKConsts.KEEPALIVEMONITOR_PORT, servicName));
+            beatDataTask.submit(() -> beatDataSender = new BeatDataSender(url.toString(), ZKConsts.KEEPALIVEMONITOR_ADDRESS, ZKConsts.KEEPALIVEMONITOR_PORT, servicName));
 
             future.channel().closeFuture().sync();
         } catch (Exception e) {

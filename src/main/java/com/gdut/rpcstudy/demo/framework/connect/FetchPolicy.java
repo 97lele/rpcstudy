@@ -99,7 +99,7 @@ public interface FetchPolicy {
             if (pollingMap.get(serviceName) == null) {
                 pollingMap.put(serviceName, new AtomicInteger(0));
             }
-            int next = pollingMap.get(serviceName).getAndIncrement();
+            int next = pollingMap.get(serviceName).incrementAndGet();
             int index = RANDOM.nextInt(next);
             return handlers.get(index);
         }
