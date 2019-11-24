@@ -1,5 +1,7 @@
 package com.gdut.rpcstudy.demo.framework.client;
 
+import com.gdut.rpcstudy.demo.framework.connect.FetchPolicy;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -17,6 +19,7 @@ public @interface RpcStudyClient {
     String name();
     //结果返回是异步还是同步模式
     int mode() default sync;
+    int fetch() default FetchPolicy.polling;
     int sync=0;
     int asyn=1;
 

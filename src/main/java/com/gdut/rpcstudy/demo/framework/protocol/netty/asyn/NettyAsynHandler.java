@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author: lele
@@ -19,7 +20,7 @@ import java.util.concurrent.CountDownLatch;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> implements Comparable{
+public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> implements Comparable {
     //key:requestId,value自定义future
     private ConcurrentHashMap<String, RpcFuture> resultMap = new ConcurrentHashMap<>();
 
@@ -29,15 +30,19 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
     private final URL url;
 
     private long inActiveTime;
+    //请求数
+    private AtomicInteger requestCount;
 
-    private Integer weight=5;
-    public NettyAsynHandler(URL url){
-        this.url=url;
+    private Integer weight = 5;
+
+    public NettyAsynHandler(URL url) {
+        this.url = url;
     }
-    public NettyAsynHandler(URL url,Integer weight){
-        this.url=url;
-        if(weight!=null){
-            this.weight=weight;
+
+    public NettyAsynHandler(URL url, Integer weight) {
+        this.url = url;
+        if (weight != null) {
+            this.weight = weight;
         }
     }
 
@@ -53,6 +58,7 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcResponse s) throws Exception {
         System.out.println("收到结果：" + s);
+
         String requestId = s.getRequestId();
         //设置完成并移除future
         RpcFuture future = resultMap.get(requestId);
@@ -70,6 +76,7 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
         //放到请求列表里面
         resultMap.put(rpcRequest.getRequestId(), future);
         //发送请求
+        this.requestCount.getAndIncrement();
         channel.writeAndFlush(rpcRequest).addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -84,16 +91,16 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
     //检查任务时使用
     @Override
     public int compareTo(Object o) {
-        if(o instanceof NettyAsynHandler){
-            long current=System.currentTimeMillis();
-            NettyAsynHandler other= (NettyAsynHandler) o;
+        if (o instanceof NettyAsynHandler) {
+            long current = System.currentTimeMillis();
+            NettyAsynHandler other = (NettyAsynHandler) o;
             //其他的超时时间
-            long otherInActiveTime=current-other.inActiveTime;
+            long otherInActiveTime = current - other.inActiveTime;
             //自己的超时时间
-            long thisInActiveTime=current-this.inActiveTime;
+            long thisInActiveTime = current - this.inActiveTime;
             //超时时间越大的排序反而越小，优先队列为小顶堆
-           return thisInActiveTime> otherInActiveTime?-1:thisInActiveTime==otherInActiveTime?0:1;
-        }else{
+            return thisInActiveTime > otherInActiveTime ? -1 : thisInActiveTime == otherInActiveTime ? 0 : 1;
+        } else {
             throw new UnsupportedOperationException("类型异常!");
         }
 

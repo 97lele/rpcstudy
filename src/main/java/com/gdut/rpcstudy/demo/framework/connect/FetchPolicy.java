@@ -1,11 +1,13 @@
 package com.gdut.rpcstudy.demo.framework.connect;
 
-import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.NettyAsynHandler;
-import com.gdut.rpcstudy.demo.utils.ZkUtils;
-import org.apache.curator.framework.CuratorFramework;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author: lele
@@ -13,12 +15,102 @@ import java.util.List;
  * 获取链接机制,轮询、随机、权重
  */
 public interface FetchPolicy {
+    Random RANDOM = new Random();
+    int random = 1;
+    int polling = 2;
+    int weight = 3;
+    int bestRequest = 4;
+    Map<Integer, FetchPolicy> policyMap = new HashMap<>();
+    static Map<Integer, FetchPolicy> getPolicyMap() {
+        policyMap.put(random, new RandomFetch());
+        policyMap.put(polling, new PollingFetch());
+        policyMap.put(weight, new WeightFetch());
+        policyMap.put(bestRequest, new BestRequestFetch());
+        return policyMap;
+    }
 
-    NettyAsynHandler random(String serviceName);
-    NettyAsynHandler polling(String serviceName);
-    NettyAsynHandler weight(String serviceName);
+    NettyAsynHandler choose(String serviceName, List<NettyAsynHandler> handlers);
 
 
+    class WeightFetch implements FetchPolicy {
+        @Override
+        public NettyAsynHandler choose(String serviceName, List<NettyAsynHandler> handlers) {
+            int length = handlers.size();
+            //总权重
+            int totalWeight = 0;
+            //是否权重一致
+            boolean sameWeight = true;
+            //先把所有权重加起来
+            for (int i = 0; i < length; i++) {
+                int weight = handlers.get(i).getWeight();
+                totalWeight += weight;
+                if (sameWeight && i > 0
+                        && weight != handlers.get(i - 1).getWeight()) {
+                    sameWeight = false;
+                }
+            }
 
+            if (totalWeight > 0 && !sameWeight) {
+                int offset = RANDOM.nextInt(totalWeight);
+                for (int i = 0; i < length; i++) {
+                    offset -= handlers.get(i).getWeight();
+                    if (offset < 0) {
+                        return handlers.get(i);
+                    }
+                }
+            }
+            // 如果权重都一样，则轮询返回
+            return FetchPolicy.getPolicyMap().get(polling).choose(serviceName,handlers);
+        }
+    }
+
+    class BestRequestFetch implements FetchPolicy {
+
+        @Override
+        public NettyAsynHandler choose(String serviceName, List<NettyAsynHandler> handlers) {
+            int minRequest = Integer.MAX_VALUE;
+            NettyAsynHandler res = null;
+            for (NettyAsynHandler handler : handlers) {
+                if (handler.getRequestCount().get() < minRequest) {
+                    res = handler;
+                }
+            }
+
+            if(res==null){
+                // 如果找不到，则轮询返回
+                return FetchPolicy.getPolicyMap().get(polling).choose(serviceName,handlers);
+            }
+            return res;
+        }
+    }
+
+    class PollingFetch implements FetchPolicy {
+        private static Map<String, AtomicInteger> pollingMap = new ConcurrentHashMap<>();
+
+        @Override
+        public NettyAsynHandler choose(String serviceName, List<NettyAsynHandler> handlers) {
+            if (pollingMap.get(serviceName) == null) {
+                pollingMap.put(serviceName, new AtomicInteger(0));
+            }
+            int next = pollingMap.get(serviceName).getAndIncrement();
+            int index = RANDOM.nextInt(next);
+            return handlers.get(index);
+        }
+    }
+
+    class RandomFetch implements FetchPolicy {
+
+        @Override
+        public NettyAsynHandler choose(String serviceName, List<NettyAsynHandler> handlers) {
+
+            int index = RANDOM.nextInt(handlers.size());
+            //取出相应的handler
+            NettyAsynHandler nettyAsynHandler = null;
+            for (int i = 0; i < index; i++) {
+                nettyAsynHandler = handlers.get(i);
+            }
+            return nettyAsynHandler;
+        }
+    }
 
 }

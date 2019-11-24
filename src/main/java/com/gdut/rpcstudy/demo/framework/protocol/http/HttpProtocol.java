@@ -27,7 +27,7 @@ public class HttpProtocol implements Protocol {
     }
 
     @Override
-    public RpcFuture sendFuture(String serviceName, RpcRequest request) {
+    public RpcFuture sendFuture(int fetch,String serviceName, RpcRequest request) {
         return null;
     }
 

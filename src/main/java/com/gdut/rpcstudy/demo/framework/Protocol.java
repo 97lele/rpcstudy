@@ -19,6 +19,6 @@ public interface Protocol {
     RpcResponse send(URL url, RpcRequest rpcRequest);
 
 
-    RpcFuture sendFuture(String serviceName,RpcRequest request);
+    RpcFuture sendFuture(int fetch,String serviceName,RpcRequest request);
 
 }

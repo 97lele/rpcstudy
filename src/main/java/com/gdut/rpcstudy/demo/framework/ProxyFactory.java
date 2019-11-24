@@ -66,7 +66,7 @@ public class ProxyFactory {
                 RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes(), annotation.mode());
                 //发送请求
                 //这里的管理连接池通过服务名去访问zk，获取可用的url
-                RpcFuture res = protocol.sendFuture(annotation.name(), rpcRequest);
+                RpcFuture res = protocol.sendFuture(annotation.fetch(),annotation.name(), rpcRequest);
                 //先尝试一次
                 if (res.isDone()) {
                     return returnResult(res);

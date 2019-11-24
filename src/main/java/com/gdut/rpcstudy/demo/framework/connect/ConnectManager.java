@@ -31,12 +31,13 @@ import java.util.concurrent.locks.ReentrantLock;
  * //todo 定时更新链接
  */
 
-public class ConnectManager implements FetchPolicy {
+public class ConnectManager  {
 
 
     private Boolean isShutDown = false;
 
     private ScheduledExecutorService removeInactiveTask;
+    private final Random random = new Random();
 
     /**
      * 客户端链接服务端超时时间
@@ -62,13 +63,10 @@ public class ConnectManager implements FetchPolicy {
      */
     private Map<String, AtomicInteger> pollingMap = new ConcurrentHashMap<>();
 
-
     /**
      * 对于每个服务都有一个锁，每个锁都有两个条件队列，用于控制链接获取以及添加链接
      */
     private Map<String, Object[]> serviceCondition = new ConcurrentHashMap<>();
-
-
 
 
     /**
@@ -99,7 +97,6 @@ public class ConnectManager implements FetchPolicy {
     private ThreadPoolExecutor clientBooter = new ThreadPoolExecutor(
             16, 16, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1024)
             , new RpcThreadFactoryBuilder().setNamePrefix("clientBooter").build(), new ThreadPoolExecutor.AbortPolicy());
-
 
 
     private static class Holder {
@@ -164,16 +161,24 @@ public class ConnectManager implements FetchPolicy {
         if (serverInitCountDownLatch.getCount() != 0) {
             System.out.println("连接池初始化新建客户端链接:" + handler.getUrl());
             serverInitCountDownLatch.countDown();
-        }else{
+        } else {
             System.out.println("连接池初始化后新建客户端链接:" + handler.getUrl());
-
         }
+
         //唤醒等待客户端链接的线程
         signalAvailableHandler(serviceName);
         lock.unlock();
     }
 
-    List<NettyAsynHandler> mayWaitBeforeGetConnection(String serviceName){
+
+public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
+    List<NettyAsynHandler> handlers = mayWaitBeforeGetConnection(serviceName);
+    NettyAsynHandler choose = FetchPolicy.getPolicyMap().get(mode).choose(serviceName, handlers);
+    return choose;
+}
+
+
+  private  List<NettyAsynHandler> mayWaitBeforeGetConnection(String serviceName) {
         List<NettyAsynHandler> nettyAsynHandlers = serverClientMap.get(serviceName);
         int size = 0;
         //先尝试获取
@@ -195,44 +200,6 @@ public class ConnectManager implements FetchPolicy {
         return nettyAsynHandlers;
     }
 
-    @Override
-    public NettyAsynHandler random(String serviceName) {
-        List<NettyAsynHandler> nettyAsynHandlers = mayWaitBeforeGetConnection(serviceName);
-        //获取对应的访问次数
-        int index=new Random().nextInt(nettyAsynHandlers.size());
-        //取出相应的handler
-        NettyAsynHandler nettyAsynHandler=null ;
-        for (int i = 0; i < index; i++) {
-            nettyAsynHandler = nettyAsynHandlers.get(i);
-        }
-        return nettyAsynHandler;
-    }
-    /**
-     * 获取对应服务下的handler，通过轮询获取
-     *
-     * @param serviceName
-     * @return
-     */
-    @Override
-    public NettyAsynHandler polling(String serviceName) {
-       List<NettyAsynHandler> nettyAsynHandlers = mayWaitBeforeGetConnection(serviceName);
-        int size = nettyAsynHandlers.size();
-        //获取对应的访问次数
-        AtomicInteger count = pollingMap.get(serviceName);
-        int index = (count.addAndGet(1) + size) % size;
-        //取出相应的handler
-        NettyAsynHandler nettyAsynHandler = nettyAsynHandlers.get(0);
-        for (int i = 0; i < index; i++) {
-            nettyAsynHandler = nettyAsynHandlers.get(i);
-        }
-        return nettyAsynHandler;
-    }
-
-    @Override
-    public NettyAsynHandler weight(String serviceName) {
-        List<NettyAsynHandler> nettyAsynHandlers = mayWaitBeforeGetConnection(serviceName);
-return null;
-    }
 
 
 
@@ -312,7 +279,7 @@ return null;
     public void addInactiveURL(URL url, String serviceName) {
         ReentrantLock lock = addOrRemoveInactiveLock.get(serviceName)[0];
         lock.lock();
-        System.out.println("不活跃链接加入_"+url.toString());
+        System.out.println("不活跃链接加入_" + url.toString());
         List<NettyAsynHandler> nettyAsynHandlers = serverClientMap.get(serviceName);
         NettyAsynHandler inActive = null;
         for (NettyAsynHandler nettyAsynHandler : nettyAsynHandlers) {
@@ -329,6 +296,7 @@ return null;
         inActiveHandlers.offer(inActive);
         inactiveClientMap.put(serviceName, inActiveHandlers);
         System.out.println("inactive:" + inactiveClientMap.get(serviceName).toString());
+
         lock.unlock();
         //删除url
         removeURL(url, serviceName, false);
@@ -353,6 +321,7 @@ return null;
                     nettyAsynHandler.setInActiveTime(0);
                     addConnection(serviceName, nettyAsynHandler);
                     list.remove(nettyAsynHandler);
+
                     System.out.printf("%s服务下的%s重新添加进活跃队列%n", serviceName, nettyAsynHandler.toString());
                     break;
                 }
@@ -450,7 +419,7 @@ return null;
      * @param url
      */
     public void createClient(String serviceName, EventLoopGroup eventLoopGroup, URL url) {
-        System.out.println(Thread.currentThread().getName()+"准备新建客户端");
+        System.out.println(Thread.currentThread().getName() + "准备新建客户端");
         Bootstrap b = new Bootstrap();
         b.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
@@ -471,7 +440,7 @@ return null;
 
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete( ChannelFuture channelFuture) throws Exception {
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
                 //链接成功后的操作，把相应的url地址和客户端链接存入
                 if (channelFuture.isSuccess()) {
                     NettyAsynHandler handler = channelFuture.channel().pipeline().get(NettyAsynHandler.class);
