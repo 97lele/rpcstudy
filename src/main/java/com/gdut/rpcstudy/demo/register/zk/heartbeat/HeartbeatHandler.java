@@ -24,11 +24,11 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
     private final static int MIN_RE_ACTIVE_COUNT = 3;
 
     //维护channelId和具体地址的map，当发生变化时对其进行删除
-    private  ConcurrentHashMap<String, ChannelStatus> channelUrlMap ;
+    private ConcurrentHashMap<String, ChannelStatus> channelUrlMap;
 
 
-    public HeartbeatHandler(ConcurrentHashMap<String,ChannelStatus> map) {
-        channelUrlMap=map;
+    public HeartbeatHandler(ConcurrentHashMap<String, ChannelStatus> map) {
+        channelUrlMap = map;
     }
 
 
@@ -45,14 +45,19 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
         } else {
             //如果收到不活跃的节点重连发来的信息,
             if (!status.isActive()) {
-                System.out.println(url+"尝试重连");
+                //记录重连的心跳次数
+                System.out.println(url + "尝试重连");
                 int i = status.getReActiveCount().incrementAndGet();
+                //第一次重连的话，记录重连时间
                 if (i == 1) {
                     String s = ctx.channel().id().asShortText();
-                 status.setChannelId(s);
+                    status.setChannelId(s);
                     status.setReActive(System.currentTimeMillis());
-                } else if (i>=MIN_RE_ACTIVE_COUNT) {
-                    long minute=(System.currentTimeMillis() - status.getReActive()) / (1000 * 60 )+1;
+                    //如果大于最小重连心跳次数
+                } else if (i >= MIN_RE_ACTIVE_COUNT) {
+                    //计算重连阶段的时间
+                    long minute = (System.currentTimeMillis() - status.getReActive()) / (1000 * 60) + 1;
+                    //如果大于要求的时间，则是认为活跃
                     if (minute >= COUNT_MINUTE) {
                         status.setActive(true);
                         status.setInActiveCount(new AtomicInteger(0));
@@ -85,12 +90,13 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
                     channelStatus.setInActive(System.currentTimeMillis());
                 }
                 //1分钟内出现2次以上不活跃现象，有的话就把它去掉
-                long minute = (System.currentTimeMillis() - channelStatus.getInActive()) / (1000 * 60 )+1;
-                System.out.printf("第%s次不活跃,当前分钟%d%n",channelStatus.getInActiveCount().get(),minute);
-                if (inActiveCount >= MAX_IN_ACTIVE_COUNT&&minute <= COUNT_MINUTE) {
-                        System.out.println("移除不活跃的ip" + channelStatus.toString());
-                        channelStatus.setActive(false);
-                        updateOrRemove(url, ctx, true, ZKConsts.INACTIVE);
+                long minute = (System.currentTimeMillis() - channelStatus.getInActive()) / (1000 * 60) + 1;
+                System.out.printf("第%s次不活跃,当前分钟%d%n", channelStatus.getInActiveCount().get(), minute);
+                if (inActiveCount >= MAX_IN_ACTIVE_COUNT && minute <= COUNT_MINUTE) {
+                    System.out.println("移除不活跃的ip" + channelStatus.toString());
+                    //设置不活跃
+                    channelStatus.setActive(false);
+                    updateOrRemove(url, ctx, true, ZKConsts.INACTIVE);
                 } else {
                     //重新计算,是活跃的状态
                     if (minute > COUNT_MINUTE) {
@@ -106,6 +112,12 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
+    /**
+     * 通过channelId获取server的状态信息
+     *
+     * @param channelId
+     * @return
+     */
     public Object[] getStatusValuesByChannelId(String channelId) {
         Iterator<Map.Entry<String, ChannelStatus>> iterator = channelUrlMap.entrySet().iterator();
         Integer inActiveCount = 0;

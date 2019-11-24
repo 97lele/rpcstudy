@@ -20,6 +20,7 @@ public interface FetchPolicy {
     int polling = 2;
     int weight = 3;
     int bestRequest = 4;
+    //策略类
     Map<Integer, FetchPolicy> policyMap = new HashMap<>();
     static Map<Integer, FetchPolicy> getPolicyMap() {
         policyMap.put(random, new RandomFetch());
@@ -40,7 +41,7 @@ public interface FetchPolicy {
             int totalWeight = 0;
             //是否权重一致
             boolean sameWeight = true;
-            //先把所有权重加起来
+            //先把所有权重加起来，并且判断权重是否一致
             for (int i = 0; i < length; i++) {
                 int weight = handlers.get(i).getWeight();
                 totalWeight += weight;
@@ -49,7 +50,7 @@ public interface FetchPolicy {
                     sameWeight = false;
                 }
             }
-
+            //不断减去对应权重所在的区间
             if (totalWeight > 0 && !sameWeight) {
                 int offset = RANDOM.nextInt(totalWeight);
                 for (int i = 0; i < length; i++) {
@@ -64,6 +65,9 @@ public interface FetchPolicy {
         }
     }
 
+    /**
+     * 主要通过NettyAsynHandler的requestCount属性挑取最小请求的handler进行返回
+     */
     class BestRequestFetch implements FetchPolicy {
 
         @Override
@@ -84,6 +88,9 @@ public interface FetchPolicy {
         }
     }
 
+    /**
+     * 记录每个服务对应的请求次数，并返回对应的handler
+     */
     class PollingFetch implements FetchPolicy {
         private static Map<String, AtomicInteger> pollingMap = new ConcurrentHashMap<>();
 
@@ -98,6 +105,9 @@ public interface FetchPolicy {
         }
     }
 
+    /**
+     * 随机
+     */
     class RandomFetch implements FetchPolicy {
 
         @Override

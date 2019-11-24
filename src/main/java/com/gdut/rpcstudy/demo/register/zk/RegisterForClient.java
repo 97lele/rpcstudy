@@ -51,6 +51,7 @@ public class RegisterForClient implements NodeChangePublisher {
         return Holder.j;
     }
 
+    //添加监听者
     private RegisterForClient() {
         client = ZkUtils.getClient();
         this.addListener(new NodeChangeListener.AddServer());
@@ -101,9 +102,8 @@ public class RegisterForClient implements NodeChangePublisher {
                     String path = event.getData().getPath();
                     notifyPool.submit(() -> {
                         System.out.println("删除远程服务端节点:" + path);
-                        notifyListener(NodeChangeListener.remove, path);
+                        notifyListener(NodeChangePublisher.remove, path);
                     });
-                    //格式 service:url
                 }
                 if (event.getType().equals(PathChildrenCacheEvent.Type.CHILD_UPDATED)) {
                     String path = event.getData().getPath();
@@ -111,15 +111,21 @@ public class RegisterForClient implements NodeChangePublisher {
                         byte[] status = event.getData().getData();
                         String serverStatus= new String(status);
                         if (serverStatus.equals(ACTIVE)) {
-                            System.out.println("远程服务端上线事件:" + NodeChangeListener.add + path);
-                            notifyListener(NodeChangeListener.add, path);
+                            notifyPool.submit(() -> {
+                                System.out.println("远程服务端上线事件:" + NodeChangePublisher.add + path);
+                                notifyListener(NodeChangePublisher.add, path);
+                            });
                         } else if (serverStatus.equals(ZKConsts.INACTIVE)) {
                             //失效事件
-                            System.out.println("远程服务端下线事件：" + NodeChangeListener.inactive + path);
-                            notifyListener(NodeChangeListener.inactive, path);
+                            notifyPool.submit(() -> {
+                                System.out.println("远程服务端下线事件：" + NodeChangePublisher.inactive + path);
+                                notifyListener(NodeChangePublisher.inactive, path);
+                            });
                         } else if (serverStatus.equals(ZKConsts.REACTIVE)) {
-                            System.out.println("远程服务端重新上线事件：" + path);
-                            notifyListener(NodeChangeListener.reactive, path);
+                            notifyPool.submit(() -> {
+                                System.out.println("远程服务端重新上线事件：" + path);
+                                notifyListener(NodeChangePublisher.reactive, path);
+                            });
                         }
                     });
 
@@ -167,6 +173,7 @@ public class RegisterForClient implements NodeChangePublisher {
             e.printStackTrace();
         }
     }
+    //同步模式下使用，可以当作废弃
     public URL random(String serviceName) {
 
         //通过服务名获取具体的url

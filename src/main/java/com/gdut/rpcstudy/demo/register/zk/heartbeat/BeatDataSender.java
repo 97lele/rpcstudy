@@ -15,13 +15,17 @@ import java.util.concurrent.*;
 /**
  * @author lulu
  * @Date 2019/11/18 23:30
+ * 服务端的发送心跳包类
  */
 @Getter
 public class BeatDataSender {
-    private String active ;
+    //状态
+    private String activeStatus;
 
 
+    //负责定期发送心跳包的线程池
     private ScheduledExecutorService service;
+    //失败后重连的线程池
     private ScheduledExecutorService retryConnect;
     private boolean reconnect = false;
 
@@ -31,10 +35,10 @@ public class BeatDataSender {
         this.send(localAddress, remoteIp, remotePort, serviceName);
         //如果重连了尝试重新发送心跳包
         retryConnect.scheduleAtFixedRate(() -> {
-            if (active == ZKConsts.INACTIVE) {
+            if (activeStatus == ZKConsts.INACTIVE) {
                 System.out.println("server尝试重连监控器");
                 send(localAddress, remoteIp, remotePort, serviceName);
-                active = ZKConsts.REACTIVE;
+                activeStatus = ZKConsts.REACTIVE;
                 reconnect = true;
             }
         }, 3, 3, TimeUnit.MINUTES);
@@ -59,7 +63,7 @@ public class BeatDataSender {
                                     .addLast(new ChannelInboundHandlerAdapter() {
                                         @Override
                                         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-                                            active = ZKConsts.INACTIVE;
+                                            activeStatus = ZKConsts.INACTIVE;
                                             System.out.println("由于不活跃次数在2分钟内超过3次,链接被关闭");
                                             ctx.channel().close();
                                         }
@@ -85,6 +89,7 @@ public class BeatDataSender {
                             } else {
                                 System.out.println("3s后重连");
                                 TimeUnit.SECONDS.sleep(3);
+                                //重新发送
                                 send(localAddress, remoteIp, remotePort, serviceName);
                             }
 

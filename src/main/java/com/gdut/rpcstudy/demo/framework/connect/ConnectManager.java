@@ -64,7 +64,7 @@ public class ConnectManager  {
     private Map<String, AtomicInteger> pollingMap = new ConcurrentHashMap<>();
 
     /**
-     * 对于每个服务都有一个锁，每个锁都有两个条件队列，用于控制链接获取以及添加链接
+     * 对于每个服务都有一个锁，每个锁都有一个条件队列，用于控制链接获取以及添加链接
      */
     private Map<String, Object[]> serviceCondition = new ConcurrentHashMap<>();
 
@@ -170,14 +170,14 @@ public class ConnectManager  {
         lock.unlock();
     }
 
-
+//通过对应的负载均衡策略挑选可用客户端连接
 public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
     List<NettyAsynHandler> handlers = mayWaitBeforeGetConnection(serviceName);
     NettyAsynHandler choose = FetchPolicy.getPolicyMap().get(mode).choose(serviceName, handlers);
     return choose;
 }
 
-
+//等待可用的客户端连接
   private  List<NettyAsynHandler> mayWaitBeforeGetConnection(String serviceName) {
         List<NettyAsynHandler> nettyAsynHandlers = serverClientMap.get(serviceName);
         int size = 0;
@@ -247,7 +247,7 @@ public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
     }
 
     /**
-     * 定时清除不活跃的链接,待优化
+     * 定时清除不活跃的链接
      */
     public void removeInactiveURL() {
         /**

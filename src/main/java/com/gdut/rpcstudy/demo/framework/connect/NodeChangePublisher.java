@@ -8,6 +8,15 @@ import com.gdut.rpcstudy.demo.framework.URL;
  */
 public interface NodeChangePublisher {
 
+     /**
+      * 事件标识
+      */
+     int inactive=0;
+     int remove=1;
+     int add=2;
+     int reactive=3;
+
+
      void addListener(NodeChangeListener listener) ;
 
      void removeListener(NodeChangeListener listener) ;

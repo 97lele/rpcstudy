@@ -1,5 +1,6 @@
 package com.gdut.rpcstudy.demo.register.zk;
 
+import com.gdut.rpcstudy.demo.consts.ZKConsts;
 import com.gdut.rpcstudy.demo.register.zk.heartbeat.ChannelStatus;
 import com.gdut.rpcstudy.demo.register.zk.heartbeat.HeartbeatHandler;
 import io.netty.bootstrap.ServerBootstrap;
@@ -50,7 +51,7 @@ public class KeepAliveMonitor {
                         }
                     });
             //bind初始化端口是异步的，但调用sync则会同步阻塞等待端口绑定成功
-            ChannelFuture future = bootstrap.bind("127.0.0.1",8888).sync();
+            ChannelFuture future = bootstrap.bind(ZKConsts.KEEPALIVEMONITOR_ADDRESS,ZKConsts.KEEPALIVEMONITOR_PORT).sync();
             future.channel().closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();

@@ -11,19 +11,17 @@ public interface NodeChangeListener {
 
     ConnectManager connect=ConnectManager.getInstance();
 
+    //相应的处理
     void change(int state,URL url,String serviceName);
 
-    int inactive=0;
-    int remove=1;
-    int add=2;
-    int reactive=3;
+
 
 
     class AddServer implements NodeChangeListener{
 
         @Override
         public void change(int state, URL url,String serviceName) {
-            if(state==NodeChangeListener.add){
+            if(state==NodeChangePublisher.add){
                 System.out.println(Thread.currentThread().getName()+"addNode的listern事件被触发");
                 connect.addServerAfter(url,serviceName);
             }
@@ -34,7 +32,7 @@ public interface NodeChangeListener {
 
         @Override
         public void change(int state, URL url, String serviceName) {
-            if(state==NodeChangeListener.reactive){
+            if(state==NodeChangePublisher.reactive){
                 System.out.println("reActive的listern事件被触发");
                 connect.reAddActiveURL(url,serviceName);
             }
@@ -45,7 +43,7 @@ public interface NodeChangeListener {
 
         @Override
         public void change(int state, URL url, String serviceName) {
-            if(state==NodeChangeListener.inactive){
+            if(state==NodeChangePublisher.inactive){
                 System.out.println("InActive的listern事件被触发");
 
                 connect.addInactiveURL(url,serviceName);
@@ -57,7 +55,7 @@ public interface NodeChangeListener {
 
         @Override
         public void change(int state, URL url, String serviceName) {
-            if(state==NodeChangeListener.remove){
+            if(state==NodeChangePublisher.remove){
                 System.out.println("RemovServer的listern事件被触发");
                 connect.removeURL(url,serviceName,true);
             }
