@@ -23,10 +23,10 @@ public interface FetchPolicy {
     //策略类
     Map<Integer, FetchPolicy> policyMap = new HashMap<>();
     static Map<Integer, FetchPolicy> getPolicyMap() {
-        policyMap.put(random, new RandomFetch());
-        policyMap.put(polling, new PollingFetch());
-        policyMap.put(weight, new WeightFetch());
-        policyMap.put(bestRequest, new BestRequestFetch());
+        policyMap.putIfAbsent(random, new RandomFetch());
+        policyMap.putIfAbsent(polling, new PollingFetch());
+        policyMap.putIfAbsent(weight, new WeightFetch());
+        policyMap.putIfAbsent(bestRequest, new BestRequestFetch());
         return policyMap;
     }
 

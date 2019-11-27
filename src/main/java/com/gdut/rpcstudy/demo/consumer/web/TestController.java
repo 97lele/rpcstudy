@@ -1,6 +1,8 @@
 package com.gdut.rpcstudy.demo.consumer.web;
 
 import com.gdut.rpcstudy.demo.consumer.HelloService;
+import com.gdut.rpcstudy.demo.framework.client.requestlimit.RateLimitPolicy;
+import com.gdut.rpcstudy.demo.framework.client.requestlimit.RequestLimit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,11 +23,14 @@ public class TestController {
     }
 
     @GetMapping("/t2")
+    @RequestLimit(mode = RateLimitPolicy.COUNT_RATE_LIMITER
+    )
     public String get2() {
             return helloService.sayHello("hi");
     }
 
     @GetMapping("/t3")
+    @RequestLimit(mode = RateLimitPolicy.TOKEN_BUCKET_LIMITER)
     public String get3() {
             return helloService.sayHello2("hi");
     }
