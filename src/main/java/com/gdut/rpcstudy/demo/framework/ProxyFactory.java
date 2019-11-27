@@ -19,6 +19,7 @@ import java.util.concurrent.*;
  * 代理工厂，对传入的类进行代理对具体执行的方法进行封装然后发送给服务端进行执行
  */
 public class ProxyFactory {
+
     //用于执行future回调
     private static ThreadPoolExecutor futureTask = new ThreadPoolExecutor(16, 16,
             600L, TimeUnit.SECONDS, new LinkedBlockingDeque<>(),new RpcThreadFactoryBuilder().setNamePrefix("futureTask").build());
@@ -26,7 +27,6 @@ public class ProxyFactory {
     public static void submit(Runnable task) {
         futureTask.submit(task);
     }
-
 
     public static <T> T getProxy(Class interfaceClass) {
         return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
@@ -56,24 +56,34 @@ public class ProxyFactory {
         return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+
                 //指定所用协议
                 Protocol protocol = ProtocolFactory.netty();
                 RpcStudyClient annotation = (RpcStudyClient) interfaceClass.getAnnotation(RpcStudyClient.class);
                 String requestId = UUID.randomUUID().toString().replace("-", "");
                 //封装方法参数
                 RpcRequest rpcRequest = new RpcRequest(requestId, interfaceClass.getName(), method.getName(), args, method.getParameterTypes(), annotation.mode());
+                Future<RpcFuture> res = futureTask.submit(new Callable<RpcFuture>() {
+
+                    @Override
+                    public RpcFuture call() throws Exception {
+                        RpcFuture res = protocol.sendFuture(annotation.fetch(), annotation.name(), rpcRequest);
+                        //先尝试一次
+                        if (res.isDone()) {
+                            return res;
+                        }
+                        //不行就自旋等待
+                        while (!res.isDone()) {
+
+                        }
+                        return res;
+                    }
+                    ;
+                });
+
                 //发送请求
                 //这里的管理连接池通过服务名去访问zk，获取可用的url
-                RpcFuture res = protocol.sendFuture(annotation.fetch(),annotation.name(), rpcRequest);
-                //先尝试一次
-                if (res.isDone()) {
-                    return returnResult(res);
-                }
-                //不行就自旋等待
-                while (!res.isDone()) {
-
-                }
-                return returnResult(res);
+                return returnResult(res.get());
             }
         });
     }

@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -27,9 +28,10 @@ public class RpcFuture implements Future<Object> {
     /**
      * 自定义同步器，这里只是用来通过自选改变状态
      */
-     private Sync sync;
+    private Sync sync;
 
     public RpcFuture(RpcRequest rpcRequest) {
+
         this.rpcRequest = rpcRequest;
         this.sync = new Sync();
     }
@@ -47,6 +49,7 @@ public class RpcFuture implements Future<Object> {
 
     /**
      * 返回状态是否改变了
+     *
      * @return
      */
     @Override
@@ -56,11 +59,12 @@ public class RpcFuture implements Future<Object> {
 
     /**
      * 赋值并设置同步器锁状态为1
+     *
      * @param response
      */
     public void done(RpcResponse response) {
         this.rpcResponse = response;
-        sync.tryRelease(1);
+        sync.release(1);
 
     }
 
@@ -68,6 +72,7 @@ public class RpcFuture implements Future<Object> {
     /**
      * 自选等待结果，这里一直执行acquire
      * 直到tryacquire方法return true即state为1
+     *
      * @return
      * @throws InterruptedException
      * @throws ExecutionException
@@ -81,6 +86,7 @@ public class RpcFuture implements Future<Object> {
 
     /**
      * 超时抛异常
+     *
      * @param timeout
      * @param unit
      * @return
@@ -90,7 +96,7 @@ public class RpcFuture implements Future<Object> {
      */
     @Override
     public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-      //超时获取
+        //超时获取
         boolean success = sync.tryAcquireNanos(-1, unit.toNanos(timeout));
         return get(success);
     }
@@ -106,15 +112,16 @@ public class RpcFuture implements Future<Object> {
     }
 
 
-
     /**
      * 继承同步器，这里只是用来自旋改变状态，根据state来实现，state初始为0
      */
     static class Sync extends AbstractQueuedSynchronizer {
+
         /**
          * 尝试获取锁,如果获取不了，加入同步队列，阻塞自己，只由同步队列的头自旋获取锁
          * 当状态为1，即有结果返回时可以获取锁进行后续操作,设置result
-         *这里只有一个节点，会不断自选尝试获取锁
+         * 这里只有一个节点，会不断自选尝试获取锁
+         *
          * @param arg
          * @return
          */
@@ -126,6 +133,7 @@ public class RpcFuture implements Future<Object> {
         /**
          * 用于远端有返回时，设置状态变更
          * 从头唤醒同步队列的队头下一个等待的节点，如果下一个节点为空，则从队尾唤醒
+         *
          * @param arg
          * @return
          */
