@@ -8,9 +8,7 @@ import com.gdut.rpcstudy.demo.framework.Protocol;
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import com.gdut.rpcstudy.demo.framework.server.RpcStudyRegister;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
+
 
 /**
  * @author lulu

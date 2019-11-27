@@ -6,6 +6,7 @@ import com.gdut.rpcstudy.demo.framework.serialize.handler.BaseCodec;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.register.zk.RegisterForServer;
 import com.gdut.rpcstudy.demo.register.zk.heartbeat.BeatDataSender;
+import com.gdut.rpcstudy.demo.utils.RpcThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -14,6 +15,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 import java.util.Map;
 import java.util.concurrent.*;
@@ -25,6 +27,11 @@ import java.util.concurrent.*;
  */
 public class NettyServer {
     BeatDataSender beatDataSender;
+    private ExecutorService serverTask=new ThreadPoolExecutor(
+            10,10,600,TimeUnit.SECONDS,new LinkedBlockingQueue<>(),
+            new RpcThreadFactoryBuilder().setNamePrefix("serverTask").build()
+    );
+
     private ExecutorService beatDataTask = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1));
 
     public void start(String servicName, URL url, Map<String, Object> serviceMap) throws InterruptedException {
@@ -48,9 +55,10 @@ public class NettyServer {
                                      //把本地执行的response对象转为字节
                                      .addLast(new RpcEncoder(RpcResponse.class))*/
                                     //统一的编解码器
+                                    .addLast(new LengthFieldBasedFrameDecoder(1024, 0, 4, 0, 0))
                                     .addLast(new BaseCodec(RpcRequest.class))
                                     //把本地执行的response对象转为字节
-                                    .addLast(new NettyServerHandler(serviceMap));
+                                    .addLast(new NettyServerHandler(serviceMap,serverTask));
 
                         }
                     });
@@ -65,7 +73,7 @@ public class NettyServer {
                 }
             });
             //添加发送心跳
-            beatDataTask.submit(() -> beatDataSender = new BeatDataSender(url.toString(), ZKConsts.KEEPALIVEMONITOR_ADDRESS, ZKConsts.KEEPALIVEMONITOR_PORT, servicName));
+//            beatDataTask.submit(() -> beatDataSender = new BeatDataSender(url.toString(), ZKConsts.KEEPALIVEMONITOR_ADDRESS, ZKConsts.KEEPALIVEMONITOR_PORT, servicName));
 
             future.channel().closeFuture().sync();
         } catch (Exception e) {

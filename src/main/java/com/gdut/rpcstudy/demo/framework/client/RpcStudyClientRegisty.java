@@ -1,8 +1,6 @@
 package com.gdut.rpcstudy.demo.framework.client;
 
 import com.gdut.rpcstudy.demo.DemoApplication;
-import com.gdut.rpcstudy.demo.framework.connect.ConnectManager;
-import lombok.Data;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;

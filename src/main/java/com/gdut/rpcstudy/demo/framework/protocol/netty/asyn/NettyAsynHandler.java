@@ -57,7 +57,6 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcResponse s) throws Exception {
-        System.out.println("收到结果：" + s);
 
         String requestId = s.getRequestId();
         //设置完成并移除future
@@ -70,7 +69,6 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
 
 
     public RpcFuture sendRequest(RpcRequest rpcRequest) {
-        //防止并发调用sendRequest，一次只允许一个请求线程进入
         final CountDownLatch latch = new CountDownLatch(1);
         RpcFuture future = new RpcFuture(rpcRequest);
         //放到请求列表里面
@@ -80,11 +78,15 @@ public class NettyAsynHandler extends SimpleChannelInboundHandler<RpcResponse> i
         channel.writeAndFlush(rpcRequest).addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                System.out.println("发送了消息" + rpcRequest.toString());
                 latch.countDown();
-
             }
         });
+        try {
+            //等待结果
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return future;
     }
 

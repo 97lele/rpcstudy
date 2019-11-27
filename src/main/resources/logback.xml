@@ -8,7 +8,6 @@
             </pattern>
         </encoder>
     </appender>
-
     <root level="info">
         <appender-ref ref="consoleLog"></appender-ref>
     </root>

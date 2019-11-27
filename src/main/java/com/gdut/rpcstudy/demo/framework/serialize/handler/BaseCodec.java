@@ -49,9 +49,15 @@ public class BaseCodec extends ByteToMessageCodec {
 
         //获取数据长度
         int dataLength = byteBuf.readInt();
+        //重置读取的index
+        if (byteBuf.readableBytes() < dataLength) {
+            byteBuf.resetReaderIndex();
+            return;
+        }
         //写入byte数组
         byte[] data = new byte[dataLength];
         byteBuf.readBytes(data);
+
         //解码转成对象
         Object res = serializer.deserialize(data, in);
         //给后面的handler处理

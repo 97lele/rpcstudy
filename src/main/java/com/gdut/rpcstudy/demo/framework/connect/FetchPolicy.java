@@ -101,7 +101,7 @@ public interface FetchPolicy {
             }
             int next = pollingMap.get(serviceName).incrementAndGet();
             int index = RANDOM.nextInt(next);
-            return handlers.get(index);
+            return handlers.get(index%handlers.size());
         }
     }
 

@@ -5,15 +5,13 @@ import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.RpcFuture;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import com.gdut.rpcstudy.demo.register.zk.RegisterForClient;
+import com.gdut.rpcstudy.demo.utils.RpcThreadFactoryBuilder;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author: lele
@@ -22,11 +20,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class ProxyFactory {
     //用于执行future回调
-    private static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
-            600L, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(65536));
+    private static ThreadPoolExecutor futureTask = new ThreadPoolExecutor(16, 16,
+            600L, TimeUnit.SECONDS, new LinkedBlockingDeque<>(),new RpcThreadFactoryBuilder().setNamePrefix("futureTask").build());
 
     public static void submit(Runnable task) {
-        threadPoolExecutor.submit(task);
+        futureTask.submit(task);
     }
 
 

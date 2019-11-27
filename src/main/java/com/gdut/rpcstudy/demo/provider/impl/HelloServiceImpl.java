@@ -18,4 +18,9 @@ public class HelloServiceImpl implements HelloService {
     public String qq() {
         return "qq";
     }
+
+    @Override
+    public String sayHello2(String userName) {
+        return "lxl"+userName;
+    }
 }

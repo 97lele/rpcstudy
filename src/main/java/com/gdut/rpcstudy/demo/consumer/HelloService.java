@@ -10,4 +10,5 @@ import com.gdut.rpcstudy.demo.framework.client.RpcStudyClient;
 public interface HelloService {
     String sayHello(String userName);
     String qq();
+    String sayHello2(String userName);
 }

@@ -1,8 +1,6 @@
 package com.gdut.rpcstudy.demo.framework.protocol.netty;
 
 import com.gdut.rpcstudy.demo.framework.serialize.handler.BaseCodec;
-import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcDecoder;
-import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcEncoder;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
@@ -11,8 +9,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-
-import java.util.concurrent.*;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 
 /**
@@ -20,11 +17,6 @@ import java.util.concurrent.*;
  * @Date 2019/11/15 22:40
  */
 public class NettyClient {
-
-
-
-
-
 
 
     public RpcResponse send(URL url, RpcRequest rpcRequest) {
@@ -45,6 +37,7 @@ public class NettyClient {
                                     .addLast(new RpcEncoder(RpcRequest.class))
                                     //把返回的response字节变为对象
                                     .addLast(new RpcDecoder(RpcResponse.class))*/
+                                    .addLast(new LengthFieldBasedFrameDecoder(1024, 0, 4, 0, 0))
                                     .addLast(new BaseCodec(RpcResponse.class))
                                     .addLast(res);
 

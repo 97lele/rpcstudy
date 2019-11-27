@@ -2,8 +2,7 @@ package com.gdut.rpcstudy.demo.framework.connect;
 
 import com.gdut.rpcstudy.demo.framework.URL;
 import com.gdut.rpcstudy.demo.framework.protocol.netty.asyn.NettyAsynHandler;
-import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcDecoder;
-import com.gdut.rpcstudy.demo.framework.serialize.handler.RpcEncoder;
+import com.gdut.rpcstudy.demo.framework.serialize.handler.BaseCodec;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcRequest;
 import com.gdut.rpcstudy.demo.framework.serialize.tranobject.RpcResponse;
 import com.gdut.rpcstudy.demo.register.zk.RegisterForClient;
@@ -16,6 +15,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -31,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * //todo 定时更新链接
  */
 
-public class ConnectManager  {
+public class ConnectManager {
 
 
     private Boolean isShutDown = false;
@@ -102,6 +103,8 @@ public class ConnectManager  {
         private static final ConnectManager j = new ConnectManager();
     }
 
+
+
     private ConnectManager() {
         //初始化时把所有的url加进去,这里可能没有可用链接，所以需要添加对节点的监听
 
@@ -137,6 +140,10 @@ public class ConnectManager  {
         return Holder.j;
     }
 
+    public  void init(){
+        System.out.println("连接池开始初始化....");
+    }
+
 
     /**
      * 添加该服务对应的链接和handler
@@ -169,15 +176,15 @@ public class ConnectManager  {
         lock.unlock();
     }
 
-//通过对应的负载均衡策略挑选可用客户端连接
-public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
-    List<NettyAsynHandler> handlers = mayWaitBeforeGetConnection(serviceName);
-    NettyAsynHandler choose = FetchPolicy.getPolicyMap().get(mode).choose(serviceName, handlers);
-    return choose;
-}
+    //通过对应的负载均衡策略挑选可用客户端连接
+    public NettyAsynHandler chooseHandler(String serviceName, Integer mode) {
+        List<NettyAsynHandler> handlers = mayWaitBeforeGetConnection(serviceName);
+        NettyAsynHandler choose = FetchPolicy.getPolicyMap().get(mode).choose(serviceName, handlers);
+        return choose;
+    }
 
-//等待可用的客户端连接
-  private  List<NettyAsynHandler> mayWaitBeforeGetConnection(String serviceName) {
+    //等待可用的客户端连接
+    private List<NettyAsynHandler> mayWaitBeforeGetConnection(String serviceName) {
         List<NettyAsynHandler> nettyAsynHandlers = serverClientMap.get(serviceName);
         int size = 0;
         //先尝试获取
@@ -198,9 +205,6 @@ public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
         }
         return nettyAsynHandlers;
     }
-
-
-
 
 
     /**
@@ -263,7 +267,7 @@ public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
             while ((current - (target = list.peek()).getInActiveTime()) > maxInActiveTime) {
                 NettyAsynHandler poll = list.poll();
                 URL url = poll.getUrl();
-                System.out.println("移除:"+url.toString());
+                System.out.println("移除:" + url.toString());
                 target.close();
             }
         }
@@ -430,9 +434,8 @@ public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline()
                                 //把request实体变为字节
-                                .addLast(new RpcEncoder(RpcRequest.class))
-                                //把返回的response字节变为对象
-                                .addLast(new RpcDecoder(RpcResponse.class))
+                                .addLast(new LengthFieldBasedFrameDecoder(1024, 0, 4, 0, 0))
+                                .addLast(new BaseCodec(RpcResponse.class))
                                 .addLast(new NettyAsynHandler(url));
                     }
                 }));
