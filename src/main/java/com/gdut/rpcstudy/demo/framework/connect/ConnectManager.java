@@ -37,7 +37,6 @@ public class ConnectManager  {
     private Boolean isShutDown = false;
 
     private ScheduledExecutorService removeInactiveTask;
-    private final Random random = new Random();
 
     /**
      * 客户端链接服务端超时时间
@@ -45,7 +44,7 @@ public class ConnectManager  {
     private long connectTimeoutMillis = 6000;
 
     /**
-     * 不活跃的链接存活时间，单位ms,这里表示5分钟不活跃就去掉
+     * 不活跃的链接存活时间，单位ms,这里表示5分钟不活跃就去掉,如果想查看演示效果可减少这里的时间以及下面执行任务的周期时间
      */
     private long maxInActiveTime = 1000 * 60 * 5;
 
@@ -114,7 +113,7 @@ public class ConnectManager  {
         addServerInit(allURL);
         //定时清理不用的链接
         removeInactiveTask = Executors.newSingleThreadScheduledExecutor();
-        removeInactiveTask.scheduleAtFixedRate(() -> removeInactiveURL(), 10, 10, TimeUnit.MINUTES);
+        removeInactiveTask.scheduleAtFixedRate(() -> removeInactiveURL(), 5, 5, TimeUnit.MINUTES);
     }
 
     //为每个服务添加对应的锁
@@ -253,6 +252,7 @@ public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
         /**
          * 移除不活跃列表
          */
+        System.out.println("执行移除不活跃server任务");
         Collection<PriorityQueue<NettyAsynHandler>> values = inactiveClientMap.values();
         Iterator<PriorityQueue<NettyAsynHandler>> iterator = values.iterator();
         while (iterator.hasNext()) {
@@ -261,7 +261,9 @@ public NettyAsynHandler chooseHandler(String serviceName,Integer mode){
             NettyAsynHandler target;
             long current = System.currentTimeMillis();
             while ((current - (target = list.peek()).getInActiveTime()) > maxInActiveTime) {
-                list.poll();
+                NettyAsynHandler poll = list.poll();
+                URL url = poll.getUrl();
+                System.out.println("移除:"+url.toString());
                 target.close();
             }
         }
